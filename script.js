@@ -1,15 +1,8 @@
-//
-//   Core Framework - Script file
-//
-//   @license    MIT (https://mit-license.org/)
-//   @author     Louis Ouellet <louis@laswitchtech.com>
-//
-
 const DocumentsModal = function(id){
 
     // AJAX Request
     $.ajax({
-        url: '/endpoint.php/documents/get?id=' + id,
+        url: '/api/documents/fetch?id=' + id,
         type: 'GET',dataType: 'json',
         success: function(response) {
             console.log(response);
@@ -196,14 +189,20 @@ const DocumentsModalCreate = function(feed = null, defaults = {}, locale = null,
 
     // AJAX Request
     $.ajax({
-        url: '/endpoint.php/documents/types',
-        type: 'GET',dataType: 'json',
+        url: '/api/doctypes/fetchAll',
+        headers: {'X-CSRF-Authorization': CSRF_KEY},
+        type: 'POST',dataType: 'json',
+        data: {
+            conditions: [
+                {key: 'isArchived', operator: '<>', value: 1},
+            ]
+        },
         success: function(response) {
 
             // Generate document types
             var types = [];
             var defaultType = null;
-            for(const [key, type] of Object.entries(response)){
+            for(const [key, type] of Object.entries(response.records)){
                 if(locale == type.locale){
                     types.push({id: type.id,text: type.title});
                     if(type.name == (defaults.type || null)){
@@ -287,14 +286,11 @@ const DocumentsModalCreate = function(feed = null, defaults = {}, locale = null,
 
                                     // AJAX Request
                                     $.ajax({
-                                        url: '/endpoint.php/documents/create',
+                                        url: '/api/documents/create',
+                                        headers: {'X-CSRF-Authorization': CSRF_KEY},
                                         type: 'POST',dataType: 'json',
                                         data: form.val(),
                                         success: function(response) {
-
-                                            // Update the CSRF Token
-                                            CSRF_KEY = response.CSRF.key;
-                                            CSRF_TOKEN = response.CSRF.token;
 
                                             // Check if the feed is defined
                                             if(feed){
@@ -323,20 +319,6 @@ const DocumentsModalCreate = function(feed = null, defaults = {}, locale = null,
                             },
                         },
                         function(form,component){
-
-                            // csrf
-                            form.add(
-                                {
-                                    name: CSRF_KEY,
-                                    label: 'csrf',
-                                    icon: 'hash',
-                                    type: 'hidden',
-                                    value: CSRF_TOKEN,
-                                },
-                                function(input,form){
-                                    input.css('display','none');
-                                },
-                            );
 
                             // type
                             form.add(
@@ -430,19 +412,20 @@ const DocumentsModalVars = function(doc){
                     callback:{
                         val: function(values){
                             var data = {docvals: values};
-                            data[CSRF_KEY] = CSRF_TOKEN;
+                            for(const [key, variable] of Object.entries(doc.docvals)){
+                                if(typeof data.docvals[key] === 'undefined'){
+                                    data.docvals[key] = variable;
+                                }
+                            }
                             return data;
                         },
                         submit: function(form){
                             $.ajax({
-                                url: '/endpoint.php/documents/update?id='+doc.id,
+                                url: '/api/documents/update?id='+doc.id,
+                                headers: {'X-CSRF-Authorization': CSRF_KEY},
                                 type: 'POST',dataType: 'json',
                                 data: form.val(),
                                 success: function(response) {
-
-                                    // Update the CSRF Token
-                                    CSRF_KEY = response.CSRF.key;
-                                    CSRF_TOKEN = response.CSRF.token;
 
                                     // Hide the modal
                                     modal.hide();
@@ -654,34 +637,24 @@ const DocumentsModalLetterhead = function(doc){
                                         // Save the checksum
                                         file.checksum = checksum;
 
-                                        // Add CSRF Token
-                                        file[CSRF_KEY] = CSRF_TOKEN;
-
                                         // AJAX Request
                                         $.ajax({
-                                            url: '/endpoint.php/files/upload',
+                                            url: '/api/files/upload',
+                                            headers: {'X-CSRF-Authorization': CSRF_KEY},
                                             type: 'POST',dataType: 'json',
                                             data: file,
                                             success: function(response) {
 
-                                                // Update the CSRF Token
-                                                CSRF_KEY = response.CSRF.key;
-                                                CSRF_TOKEN = response.CSRF.token;
-
                                                 // Initialize the updateData
                                                 var updateData = {letterhead: response.record.id};
-                                                updateData[CSRF_KEY] = CSRF_TOKEN;
 
                                                 // AJAX Request
                                                 $.ajax({
-                                                    url: '/endpoint.php/documents/update?id='+doc.id,
+                                                    url: '/api/documents/update?id='+doc.id,
+                                                    headers: {'X-CSRF-Authorization': CSRF_KEY},
                                                     type: 'POST',dataType: 'json',
                                                     data: updateData,
                                                     success: function(response) {
-
-                                                        // Update the CSRF Token
-                                                        CSRF_KEY = response.CSRF.key;
-                                                        CSRF_TOKEN = response.CSRF.token;
 
                                                         // Hide the modal
                                                         modal.hide();
@@ -698,20 +671,6 @@ const DocumentsModalLetterhead = function(doc){
                     },
                 },
                 function(form,component){
-
-                    // csrf
-                    form.add(
-                        {
-                            name: CSRF_KEY,
-                            label: 'csrf',
-                            icon: 'hash',
-                            type: 'hidden',
-                            value: CSRF_TOKEN,
-                        },
-                        function(input,form){
-                            input.css('display','none');
-                        },
-                    );
 
                     // file
                     form.add(
@@ -771,18 +730,14 @@ const DocumentsModalLetterheadRemove = function(doc){
 
                         // Initialize the updateData
                         var updateData = {letterhead: null};
-                        updateData[CSRF_KEY] = CSRF_TOKEN;
 
                         // AJAX Request
                         $.ajax({
-                            url: '/endpoint.php/documents/update?id='+doc.id,
+                            url: '/api/documents/update?id='+doc.id,
+                            headers: {'X-CSRF-Authorization': CSRF_KEY},
                             type: 'POST',dataType: 'json',
                             data: updateData,
                             success: function(response) {
-
-                                // Update the CSRF Token
-                                CSRF_KEY = response.CSRF.key;
-                                CSRF_TOKEN = response.CSRF.token;
 
                                 // Hide the modal
                                 modal.hide();
@@ -852,7 +807,7 @@ const DocumentsModalApprove = function(doc){
 
                         // AJAX Request
                         $.ajax({
-                            url: '/endpoint.php/documents/approve?id='+doc.id,
+                            url: '/api/documents/approve?id='+doc.id,
                             type: 'GET',dataType: 'json',
                             success: function(response) {
 
@@ -924,7 +879,7 @@ const DocumentsModalDisapprove = function(doc){
 
                         // AJAX Request
                         $.ajax({
-                            url: '/endpoint.php/documents/disapprove?id='+doc.id,
+                            url: '/api/documents/disapprove?id='+doc.id,
                             type: 'GET',dataType: 'json',
                             success: function(response) {
 
@@ -996,7 +951,7 @@ const DocumentsModalArchive = function(doc, item = null){
 
                         // AJAX Request
                         $.ajax({
-                            url: '/endpoint.php/documents/archive?id='+doc.id,
+                            url: '/api/documents/archive?id='+doc.id,
                             type: 'GET',dataType: 'json',
                             success: function(response) {
 
@@ -1010,9 +965,6 @@ const DocumentsModalArchive = function(doc, item = null){
                             }
                         });
                     }, 300);
-                },
-                onHide: function(component,modal){
-                    DocumentsModal(doc.id);
                 },
             },
         },
@@ -1073,7 +1025,7 @@ const DocumentsModalRecover = function(doc){
 
                         // AJAX Request
                         $.ajax({
-                            url: '/endpoint.php/documents/recover?id='+doc.id,
+                            url: '/api/documents/recover?id='+doc.id,
                             type: 'GET',dataType: 'json',
                             success: function(response) {
 

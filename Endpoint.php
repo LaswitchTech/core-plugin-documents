@@ -1,434 +1,370 @@
 <?php
 
-/**
- * Core Framework - DocumentsEndpoint
- *
- * @license    MIT (https://mit-license.org/)
- * @author     Louis Ouellet <louis@laswitchtech.com>
- */
-
 // Import additionnal class into the global namespace
-use \LaswitchTech\Core\Abstracts\Endpoint;
+use \LaswitchTech\Core\Base\BaseEndpoint;
 
-class DocumentsEndpoint extends Endpoint {
+class DocumentsEndpoint extends BaseEndpoint {
 
     /**
      * Constructor
      */
     public function __construct()
     {
-
-        // Call Parent Constructor
+        // Call the parent constructor
         parent::__construct();
 
-        // Retrieve the namespace
-        $namespace = $this->Request->getNamespace();
-
-        // Set Global access
-        $this->Public = false;
+        // Initialize the Endpoint
+        $this->init('documents');
 
         // Set Properties
-        switch($namespace){
-            case "/documents/types":
-            case "/documents/get":
-                $this->Level = 1;
-                break;
-            case "/documents/create":
-                $this->Level = 2;
-                break;
+        $this->required = ['type','targetTable','targetId'];
+        $this->optional = ['docvals','locale'];
+
+        // Set the Level
+        switch($this->Request->getNamespace()){
             case "/documents/approve":
             case "/documents/disapprove":
-            case "/documents/update":
                 $this->Level = 3;
-                break;
-            case "/documents/archive":
-            case "/documents/recovery":
-                $this->Level = 4;
                 break;
         }
     }
 
     /**
-     * Retrieve Document Types
-     */
-    public function typesAction(): array
-    {
-        return ["status" => 200, "message" => "OK", "data" => $this->Model->Documents->types()];
-    }
-
-    /**
-     * Create a new Document
+     * Create a record
      */
     public function createAction(): array
     {
-        // Import Global Variables
-        global $CSRF,$UUID,$LOCALE;
+        // Import Global Classes
+        global $UUID;
 
-        // Set the default message
-        $message = ["status" => 200, "message" => "OK", "data" => []];
+        // Call the parent constructor
+        $message = parent::createAction();
 
-        // Check the request method
-        if($this->Request->getMethod() == "POST"){
-            $message["data"]["CSRF"] = [
-                "token" => $CSRF->token(),
-                "key" => $CSRF->key()
-            ];
-        }
-
-        // Check if the Note is accessible
+        // Check if the record is accessible
         if($message['status'] == 200){
 
-            // Check the request method
-            if($this->Request->getMethod() == "POST"){
+            // Retrieve the parameters
+            $parameters = $message['data']['parameters'];
 
-                // Retrieve the parameters
-                $parameters = $this->Request->getParams('REQUEST');
+            // Initialize the fields array
+            $fields = [];
 
-                // Set Required Fields
-                $required = ['type','targetTable','targetId'];
+            // Retrieve the Document Type
+            $doctype = $this->Model->Doctypes->fetch(intval($parameters['type']));
 
-                // Set Optional Fields
-                $optional = ['docvals','locale'];
+            if(!empty($doctype)){
 
-                // Set Unique Fields
-                $unique = ['id','created','modified','owner','organization'];
+                // Setup our document
+                $fields['filename'] = $doctype['filename'];
+                $fields['doctype'] = $doctype['id'];
+                $fields['title'] = $doctype['title'];
+                $fields['subject'] = $doctype['subject'];
+                $fields['author'] = $this->Auth->user()->vcard('name');
+                $fields['creator'] = $this->Auth->user()->vcard('name');
+                $fields['keywords'] = $doctype['title'];
+                $fields['docvals'] = $parameters['docvals'];
+                $fields['watermark'] = "DRAFT";
+                $fields['uuid'] = $UUID->toString($message['data']['record']['id'].$message['data']['record']['created']);
 
-                // Check if all required fields are set
-                if(count(array_intersect_key(array_flip($required), $parameters)) == count($required)){
+                // Parse the Document Filename
+                $fields['filename'] = $this->Helper->Documents->replace($fields['filename'], $this->Model->Documents->variables($fields['docvals']));
 
-                    // Retrieve the Document Type
-                    $documentType = $this->Model->Documents->type(intval($parameters['type']));
+                // Check if the Event Plugin is accessible
+                if($this->Helper->Core->isInstalled('event')){
 
-                    if(!empty($documentType)){
+                    // Initialize the Events
+                    $message['data']['event'] = [];
 
-                        // Setup our document
-                        $document = [
-                            "owner" => $this->Auth->user()->username,
-                            "filename" => $documentType['filename'],
-                            "doctype" => $documentType['id'],
-                            "title" => $documentType['title'],
-                            "subject" => $documentType['subject'],
-                            "author" => $this->Auth->user()->vcard('name'),
-                            "creator" => $this->Auth->user()->vcard('name'),
-                            "keywords" => $documentType['title'],
-                            "docvals" => $parameters['docvals'] ?? [],
-                            // "letterhead" => null,
-                            "watermark" => "DRAFT",
-                            "locale" => $parameters['locale'] ?? $LOCALE->current(),
-                            // "password" => null,
-                            // "isApproved" => null,
-                            // "approvedOn" => null,
-                            "targetTable" => $parameters['targetTable'],
-                            "targetId" => intval($parameters['targetId']),
-                            "organization" => $this->Auth->user()->organization()->id,
-                        ];
+                    // Setup a new event
+                    $event = [
+                        'category' => 'Document',
+                        'message' => 'New Document Created by <vcard>'.$this->Auth->user()->vcard['id'].':'.$this->Auth->user()->username.'</vcard>',
+                        'icon' => 'circle',
+                        'color' => 'secondary',
+                        'link' => '/plugin/'.$message['data']['record']['targetTable'].'/details?id='.$message['data']['record']['targetId'],
+                        'targetTable' => $message['data']['record']['targetTable'],
+                        'targetId' => $message['data']['record']['targetId'],
+                    ];
 
-                        // Parse the Document Filename
-                        foreach($this->Model->Documents->variables($parameters['docvals']) as $key => $value){
-                            if($value){
-                                $document['filename'] = str_replace("{{".$key."}}",$value,$document['filename']);
-                            } else {
-                                $document['filename'] = str_replace("{{".$key."}}",'',$document['filename']);
-                            }
-                        }
+                    // Create the event
+                    $message['data']['event'][] = $this->Model->Event->create($event);
+                }
 
-                        // Create a Document
-                        $documentId = $this->Model->Documents->create($document);
+                // Check if $fields is empty
+                if(!empty($fields)){
+                    $affectedRows = $this->Model->{$this->name}->update($message['data']['record']['id'], $fields);
 
-                        // Retrieve the Document
-                        $document = $this->Model->Documents->get($documentId);
+                    // Check if we send out the notification
+                    if($affectedRows){
 
-                        // Update UUID
-                        $affectedRows = $this->Model->Documents->update($documentId, ['uuid' => $UUID->toString($document['id'].$document['created'])]);
-
-                        // Check if the Document was created
-                        if($documentId){
-
-                            // Retrieve the Document
-                            $message["data"]["record"] = $this->Model->Documents->get($documentId);
-                        } else {
-                            $message = ["status" => 400, "message" => "Bad Request", "data" => "Failed to Create Document"];
-                        }
-                    } else {
-                        $message = ["status" => 400, "message" => "Bad Request", "data" => "Invalid Document Type"];
+                        // Retrieve the updated record
+                        $message['data']['record'] = $this->Model->{$this->name}->fetch($message['data']['record']['id']);
                     }
-                } else {
-                    $message = ["status" => 400, "message" => "Bad Request", "data" => "Missing Required Fields"];
                 }
             } else {
-                $message = ["status" => 400, "message" => "Bad Request", "data" => "Invalid Request Method"];
+                $message = ["status" => 400, "message" => "Bad Request", "data" => "Invalid Document Type"];
             }
         }
 
+        // Return the message
         return $message;
     }
 
     /**
-     * Update a Document
+     * Update a record
      */
     public function updateAction(): array
     {
-        // Import Global Variables
-        global $CSRF;
+        // Call the parent constructor
+        $message = parent::updateAction();
 
-        // Set the default message
-        $message = ["status" => 200, "message" => "OK", "data" => []];
-
-        // Check the request method
-        if($this->Request->getMethod() == "POST"){
-            $message["data"]["CSRF"] = [
-                "token" => $CSRF->token(),
-                "key" => $CSRF->key()
-            ];
-        }
-
-        // Retrieve the Document
-        $document = $this->Model->Documents->get(intval($this->Request->getParams('GET','id')));
-
-        // Check if the Document is accessible
-        if(empty($document)){
-            $message = ["status" => 404, "message" => "Not Found", "data" => "Could not find the requested document."];
-        } else {
-            if($document['organization']['id'] != $this->Auth->user()->organization()->id){
-                $message = ["status" => 403, "message" => "Forbidden", "data" => "You are not allowed to access this document."];
-            }
-        }
-
-        // Check if the Note is accessible
+        // Check if the record is accessible
         if($message['status'] == 200){
 
-            // Check the request method
-            if($this->Request->getMethod() == "POST"){
+            // Check if the Event Plugin is accessible
+            if($this->Helper->Core->isInstalled('event')){
 
-                // Retrieve the parameters
-                $parameters = $this->Request->getParams('REQUEST');
+                // Initialize the Events
+                $message['data']['event'] = [];
 
-                // Set Required Fields
-                $required = ['title','subject','author','creator','keywords','locale','docvals','letterhead'];
+                // Setup a new event
+                $event = [
+                    'category' => 'Document',
+                    'message' => 'Document Updated by <vcard>'.$this->Auth->user()->vcard['id'].':'.$this->Auth->user()->username.'</vcard>',
+                    'icon' => 'circle',
+                    'color' => 'secondary',
+                    'link' => '/plugin/'.$message['data']['record']['targetTable'].'/details?id='.$message['data']['record']['targetId'],
+                    'targetTable' => $message['data']['record']['targetTable'],
+                    'targetId' => $message['data']['record']['targetId'],
+                ];
 
-                // Set Unique Fields
-                $unique = ['id','created','modified','owner','organization','type','targetTable','targetId'];
-
-                // Check if all required fields are set
-                if(count(array_intersect_key(array_flip($required), $parameters)) > 0){
-
-                    // Setup our document
-                    $values = [];
-
-                    // Loop through the parameters
-                    foreach($parameters as $key => $value){
-                        if(!in_array($key,$unique) && in_array($key,$required)){
-                            if($key == 'docvals'){
-                                $values[$key] = $document['docvals'];
-                                foreach($value as $k => $v){
-                                    $values[$key][$k] = $v;
-                                }
-                            } else {
-                                $values[$key] = $value;
-                            }
-                            if(empty($value)){
-                                $values[$key] = null;
-                            }
-                        }
-                    }
-
-                    // Update the Document
-                    $affectedRows = $this->Model->Documents->update($document['id'], $values);
-
-                    // Retrieve the Updated Document
-                    $message["data"]["record"] = $this->Model->Documents->get($document['id']);
-                } else {
-                    $message = ["status" => 400, "message" => "Bad Request", "data" => "Missing Required Fields"];
-                }
-            } else {
-                $message = ["status" => 400, "message" => "Bad Request", "data" => "Invalid Request Method"];
+                // Create the event
+                $message['data']['event'][] = $this->Model->Event->create($event);
             }
         }
 
+        // Return the message
         return $message;
     }
 
     /**
-     * Archive a Document
+     * Delete a record
+     */
+    public function deleteAction(): array
+    {
+        // Call the parent constructor
+        $message = parent::deleteAction();
+
+        // Check if the record is accessible
+        if($message['status'] == 200){
+
+            // Check if the Event Plugin is accessible
+            if($this->Helper->Core->isInstalled('event')){
+
+                // Initialize the Events
+                $message['data']['event'] = [];
+
+                // Setup a new event
+                $event = [
+                    'category' => 'Document',
+                    'message' => 'Document Deleted by <vcard>'.$this->Auth->user()->vcard['id'].':'.$this->Auth->user()->username.'</vcard>',
+                    'icon' => 'circle',
+                    'color' => 'secondary',
+                    'link' => '/plugin/'.$message['data']['record']['targetTable'].'/details?id='.$message['data']['record']['targetId'],
+                    'targetTable' => $message['data']['record']['targetTable'],
+                    'targetId' => $message['data']['record']['targetId'],
+                ];
+
+                // Create the event
+                $message['data']['event'][] = $this->Model->Event->create($event);
+            }
+        }
+
+        // Return the message
+        return $message;
+    }
+
+    /**
+     * Archive a record
      */
     public function archiveAction(): array
     {
-        // Set the default message
-        $message = ["status" => 200, "message" => "OK", "data" => []];
+        // Call the parent constructor
+        $message = parent::archiveAction();
 
-        // Retrieve the Document
-        $document = $this->Model->Documents->get(intval($this->Request->getParams('GET','id')));
-
-        // Check if the Document is accessible
-        if(empty($document)){
-            $message = ["status" => 404, "message" => "Not Found", "data" => "Could not find the requested document."];
-        } else {
-            if($document['organization']['id'] != $this->Auth->user()->organization()->id){
-                $message = ["status" => 403, "message" => "Forbidden", "data" => "You are not allowed to access this document."];
-            }
-        }
-
-        // Check if the Note is accessible
+        // Check if the record is accessible
         if($message['status'] == 200){
 
-            // Check the request method
-            if($this->Request->getMethod() == "GET"){
+            // Check if the Event Plugin is accessible
+            if($this->Helper->Core->isInstalled('event')){
 
-                // Update the Document
-                $affectedRows = $this->Model->Documents->update($document['id'], ["isArchived" => 1]);
+                // Initialize the Events
+                $message['data']['event'] = [];
 
-                // Retrieve the Updated Document
-                $message["data"]["record"] = $this->Model->Documents->get($document['id']);
-            } else {
-                $message = ["status" => 400, "message" => "Bad Request", "data" => "Invalid Request Method"];
+                // Setup a new event
+                $event = [
+                    'category' => 'Document',
+                    'message' => 'Document Archived by <vcard>'.$this->Auth->user()->vcard['id'].':'.$this->Auth->user()->username.'</vcard>',
+                    'icon' => 'circle',
+                    'color' => 'secondary',
+                    'link' => '/plugin/'.$message['data']['record']['targetTable'].'/details?id='.$message['data']['record']['targetId'],
+                    'targetTable' => $message['data']['record']['targetTable'],
+                    'targetId' => $message['data']['record']['targetId'],
+                ];
+
+                // Create the event
+                $message['data']['event'][] = $this->Model->Event->create($event);
             }
         }
 
+        // Return the message
         return $message;
     }
 
     /**
-     * Recover a Document
+     * Recover a record
      */
     public function recoverAction(): array
     {
-        // Set the default message
-        $message = ["status" => 200, "message" => "OK", "data" => []];
+        // Call the parent constructor
+        $message = parent::recoverAction();
 
-        // Retrieve the Document
-        $document = $this->Model->Documents->get(intval($this->Request->getParams('GET','id')));
-
-        // Check if the Document is accessible
-        if(empty($document)){
-            $message = ["status" => 404, "message" => "Not Found", "data" => "Could not find the requested document."];
-        } else {
-            if($document['organization']['id'] != $this->Auth->user()->organization()->id){
-                $message = ["status" => 403, "message" => "Forbidden", "data" => "You are not allowed to access this document."];
-            }
-        }
-
-        // Check if the Note is accessible
+        // Check if the record is accessible
         if($message['status'] == 200){
 
-            // Check the request method
-            if($this->Request->getMethod() == "GET"){
+            // Check if the Event Plugin is accessible
+            if($this->Helper->Core->isInstalled('event')){
 
-                // Update the Document
-                $affectedRows = $this->Model->Documents->update($document['id'], ["isArchived" => 0]);
+                // Initialize the Events
+                $message['data']['event'] = [];
 
-                // Retrieve the Updated Document
-                $message["data"]["record"] = $this->Model->Documents->get($document['id']);
-            } else {
-                $message = ["status" => 400, "message" => "Bad Request", "data" => "Invalid Request Method"];
+                // Setup a new event
+                $event = [
+                    'category' => 'Document',
+                    'message' => 'Document Recovered by <vcard>'.$this->Auth->user()->vcard['id'].':'.$this->Auth->user()->username.'</vcard>',
+                    'icon' => 'circle',
+                    'color' => 'secondary',
+                    'link' => '/plugin/'.$message['data']['record']['targetTable'].'/details?id='.$message['data']['record']['targetId'],
+                    'targetTable' => $message['data']['record']['targetTable'],
+                    'targetId' => $message['data']['record']['targetId'],
+                ];
+
+                // Create the event
+                $message['data']['event'][] = $this->Model->Event->create($event);
             }
         }
 
+        // Return the message
         return $message;
     }
 
     /**
-     * Approve a Document
+     * Approve a document
      */
     public function approveAction(): array
     {
         // Set the default message
         $message = ["status" => 200, "message" => "OK", "data" => []];
 
-        // Retrieve the Document
-        $document = $this->Model->Documents->get(intval($this->Request->getParams('GET','id')));
+        // Retrieve the record
+        $record = $this->Model->{$this->name}->fetch(intval($this->Request->getParams('GET','id')));
 
-        // Check if the Document is accessible
-        if(empty($document)){
-            $message = ["status" => 404, "message" => "Not Found", "data" => "Could not find the requested document."];
+        // Check if the record is accessible
+        if(empty($record)){
+            $message = ["status" => 404, "message" => "Not Found", "data" => "Could not find the requested ".$this->name."."];
         } else {
-            if($document['organization']['id'] != $this->Auth->user()->organization()->id){
-                $message = ["status" => 403, "message" => "Forbidden", "data" => "You are not allowed to access this document."];
+            // Check if the organization owns the record
+            if(array_key_exists('organization',$record) && $record['organization']['id'] != $this->Auth->user()->organization()->id){
+                $message = ["status" => 403, "message" => "Forbidden", "data" => "You are not allowed to access this ".$this->name."."];
+            }
+            // Check if the user is authorized to access the record
+            if(array_key_exists('assignedTo',$record) && $record['assignedTo']['id'] != $this->Auth->user()->id && !$this->Auth->isAuthorized("AccountManager", 1)){
+                $message = ["status" => 403, "message" => "Forbidden", "data" => "You are not allowed to access this ".$this->name."."];
             }
         }
 
-        // Check if the Note is accessible
+        // Check if the record is accessible
         if($message['status'] == 200){
 
             // Check the request method
             if($this->Request->getMethod() == "GET"){
 
-                // Update the Document
-                $affectedRows = $this->Model->Documents->update($document['id'], ["isApproved" => 1, "approvedOn" => date("Y-m-d H:i:s"), "watermark" => null]);
+                // Update the record
+                $affectedRows = $this->Model->{$this->name}->update($record['id'], [
+                    "isApproved" => 1,
+                    "approvedOn" => date("Y-m-d H:i:s"),
+                    "watermark" => null
+                ]);
 
-                // Retrieve the Updated Document
-                $message["data"]["record"] = $this->Model->Documents->get($document['id']);
+                // Check if the record was updated
+                if($affectedRows){
+
+                    // Retrieve the record
+                    $message['data']['record'] = $this->Model->{$this->name}->fetch($record['id']);
+                } else {
+                    $message = ["status" => 500, "message" => "Internal Server Error", "data" => "An error occurred while updating the ".$this->name."."];
+                }
             } else {
-                $message = ["status" => 400, "message" => "Bad Request", "data" => "Invalid Request Method"];
+                $message = ["status" => 405, "message" => "Method Not Allowed", "data" => "The method is not allowed for the requested URL."];
             }
         }
 
+        // Return the message
         return $message;
     }
 
     /**
-     * Diapprove a Document
+     * Disapprove a document
      */
     public function disapproveAction(): array
     {
         // Set the default message
         $message = ["status" => 200, "message" => "OK", "data" => []];
 
-        // Retrieve the Document
-        $document = $this->Model->Documents->get(intval($this->Request->getParams('GET','id')));
+        // Retrieve the record
+        $record = $this->Model->{$this->name}->fetch(intval($this->Request->getParams('GET','id')));
 
-        // Check if the Document is accessible
-        if(empty($document)){
-            $message = ["status" => 404, "message" => "Not Found", "data" => "Could not find the requested document."];
+        // Check if the record is accessible
+        if(empty($record)){
+            $message = ["status" => 404, "message" => "Not Found", "data" => "Could not find the requested ".$this->name."."];
         } else {
-            if($document['organization']['id'] != $this->Auth->user()->organization()->id){
-                $message = ["status" => 403, "message" => "Forbidden", "data" => "You are not allowed to access this document."];
+            // Check if the organization owns the record
+            if(array_key_exists('organization',$record) && $record['organization']['id'] != $this->Auth->user()->organization()->id){
+                $message = ["status" => 403, "message" => "Forbidden", "data" => "You are not allowed to access this ".$this->name."."];
+            }
+            // Check if the user is authorized to access the record
+            if(array_key_exists('assignedTo',$record) && $record['assignedTo']['id'] != $this->Auth->user()->id && !$this->Auth->isAuthorized("AccountManager", 1)){
+                $message = ["status" => 403, "message" => "Forbidden", "data" => "You are not allowed to access this ".$this->name."."];
             }
         }
 
-        // Check if the Note is accessible
+        // Check if the record is accessible
         if($message['status'] == 200){
 
             // Check the request method
             if($this->Request->getMethod() == "GET"){
 
-                // Update the Document
-                $affectedRows = $this->Model->Documents->update($document['id'], ["isApproved" => 0, "approvedOn" => null, "watermark" => "DRAFT"]);
+                // Update the record
+                $affectedRows = $this->Model->{$this->name}->update($record['id'], [
+                    "isApproved" => 0,
+                    "approvedOn" => null,
+                    "watermark" => "DRAFT"
+                ]);
 
-                // Retrieve the Updated Document
-                $message["data"]["record"] = $this->Model->Documents->get($document['id']);
+                // Check if the record was updated
+                if($affectedRows){
+
+                    // Retrieve the record
+                    $message['data']['record'] = $this->Model->{$this->name}->fetch($record['id']);
+                } else {
+                    $message = ["status" => 500, "message" => "Internal Server Error", "data" => "An error occurred while updating the ".$this->name."."];
+                }
             } else {
-                $message = ["status" => 400, "message" => "Bad Request", "data" => "Invalid Request Method"];
+                $message = ["status" => 405, "message" => "Method Not Allowed", "data" => "The method is not allowed for the requested URL."];
             }
         }
 
-        return $message;
-    }
-
-    /**
-     * Retrieve Document's Details
-     */
-    public function getAction(): array
-    {
-        // Set the default message
-        $message = ["status" => 200, "message" => "OK", "data" => []];
-
-        // Retrieve the Document
-        $document = $this->Model->Documents->get(intval($this->Request->getParams('GET','id')));
-
-        // Check if the Document is accessible
-        if(empty($document)){
-            $message = ["status" => 404, "message" => "Not Found", "data" => "Could not find the requested document."];
-        } else {
-            if($document['organization']['id'] != $this->Auth->user()->organization()->id){
-                $message = ["status" => 403, "message" => "Forbidden", "data" => "You are not allowed to access this document."];
-            }
-        }
-
-        // Check if the status is 200
-        if($message['status'] == 200){
-            $message['data']['record'] = $document;
-        }
-
+        // Return the message
         return $message;
     }
 }

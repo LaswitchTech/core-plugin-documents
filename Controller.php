@@ -1,12 +1,5 @@
 <?php
 
-/**
- * Core Framework - DocumentsController
- *
- * @license    MIT (https://mit-license.org/)
- * @author     Louis Ouellet <louis@laswitchtech.com>
- */
-
 // Import additionnal class into the global namespace
 use \LaswitchTech\Core\Abstracts\Controller;
 
@@ -45,7 +38,7 @@ class DocumentsController extends Controller {
         $uuid = $this->Request->getParams('GET', 'uuid') ?? null;
 
         // Retrieve the document metadata
-        $document = $this->Model->Documents->get($uuid);
+        $document = $this->Model->Documents->fetchByUUID($uuid);
 
         // Check if the document exists
         if($document){
