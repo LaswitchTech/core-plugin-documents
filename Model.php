@@ -1,25 +1,19 @@
 <?php
 
-/**
- * Core Framework - DocumentsModel
- *
- * @license    MIT (https://mit-license.org/)
- * @author     Louis Ouellet <louis@laswitchtech.com>
- */
-
 // Import additionnal class into the global namespace
-use \LaswitchTech\Core\Abstracts\Model;
+use \LaswitchTech\Core\Base\BaseModel;
 use \LaswitchTech\Core\Objects\PDF;
 
-class DocumentsModel extends Model {
+class DocumentsModel extends BaseModel {
 
     // Global Properties
-    private $Config;
-    private $UUID;
-    private $Log;
+    protected $Helper;
+    protected $Config;
+    protected $UUID;
+    protected $Log;
 
     // Properties
-    private $Path;
+    protected $Path;
 
     /**
      * Constructor
@@ -30,9 +24,10 @@ class DocumentsModel extends Model {
         parent::__construct();
 
         // Import Global Variables
-        global $CONFIG, $UUID, $LOG;
+        global $HELPER, $CONFIG, $UUID, $LOG;
 
         // Set Properties
+        $this->Helper = $HELPER;
         $this->Config = $CONFIG;
         $this->UUID = $UUID;
         $this->Log = $LOG;
@@ -42,125 +37,22 @@ class DocumentsModel extends Model {
 
         // Add the documents log
         $this->Log->add('documents');
+
+        // Initialize the Model
+        $this->init('documents');
     }
 
     /**
-     * Retrieve Document Types
+     * Retrieve multiple records
      *
-     * @param bool $all
+     * @param array $conditions
      * @return array
      */
-    public function types(bool $all = false): array
-    {
-        // Import Global Variables
-        global $AUTH;
-
-        // Create the Query
-        $Query = $this->Database->query()
-            ->table('doctypes')
-            ->select('*')
-            ->join('owner', 'users', 'username')
-            ->filter()
-            ->where('id', 9999, '<>');
-
-        // Retrieve the Results
-        $result = $Query->result();
-
-        // Decode JSON Fields
-        foreach($result as $key => $record){
-            if(!$all && !$AUTH->isAuthorized("DocType>".$result[$key]["name"],1)){
-                unset($result[$key]);
-                continue;
-            }
-            $result[$key]['locked'] = json_decode($record['locked'] ?? '[]', true);
-            $result[$key]['permissions'] = json_decode($record['permissions'] ?? '[]', true);
-        }
-
-        // Return the Results
-        return $result;
-    }
-
-    /**
-     * Retrieve Document Type
-     *
-     * @param int $id
-     * @return array
-     */
-    public function type(int $id): array
+    public function fetchAll(array $conditions = [], string $conjunction = 'AND'): array
     {
         // Create the Query
         $Query = $this->Database->query()
-            ->table('doctypes')
-            ->select('*')
-            ->join('owner', 'users', 'username')
-            ->filter()
-            ->where('id', 9999, '<>')
-            ->where('id', $id)
-            ->limit(1);
-
-        // Retrieve the Results
-        $result = $Query->result();
-
-        // Decode JSON Fields
-        foreach($result as $key => $record){
-            $result[$key]['locked'] = json_decode($record['locked'] ?? '[]', true);
-            $result[$key]['permissions'] = json_decode($record['permissions'] ?? '[]', true);
-        }
-
-        // Return the Results
-        return $result[array_key_first($result)] ?? [];
-    }
-
-    /**
-     * Create a new Document and return the id
-     *
-     * @param array $data
-     * @return int
-     */
-    public function create(array $data): int
-    {
-        // Create the Query
-        $Query = $this->Database->query()
-            ->table('documents')
-            ->insert($data);
-
-        // Execute the Query
-        $affectedRows = $Query->execute();
-
-        // Execute the Query
-        return $Query->lastId();
-    }
-
-    /**
-     * Update a Document
-     *
-     * @param int $id
-     * @param array $data
-     * @return int
-     */
-    public function update(int $id, array $data): int
-    {
-        // Create the Query
-        $Query = $this->Database->query()
-            ->table('documents')
-            ->update($data)
-            ->where('id', $id);
-
-        // Execute the Query
-        return $Query->execute();
-    }
-
-    /**
-     * Retrieve a Document
-     *
-     * @param mixed $id
-     * @return array
-     */
-    public function get(mixed $id): array
-    {
-        // Create the Query
-        $Query = $this->Database->query()
-            ->table('documents')
+            ->table($this->table)
             ->select('*')
             ->join('owner', 'users', 'username')
             ->join('doctype', 'doctypes', 'id')
@@ -168,81 +60,171 @@ class DocumentsModel extends Model {
             ->join('organization', 'organizations', 'id')
             ->filter()
             ->where('id', 9999, '<>')
-            ->where('isArchived', 0)
-            ->filter()
-            ->where('id', $id, '=', 'OR')
-            ->where('uuid', $id, '=', 'OR')
-            ->limit(1);
+            ->where('organization', $this->Auth->user()->organization()->id);
+
+        // Check if the conditions are empty
+        if(!empty($conditions)){
+
+            // Add a Filter
+            $Query->filter();
+
+            // Add the Conditions
+            foreach($conditions as $key => $condition){
+
+                // Check if the key exists in the definition
+                if(!array_key_exists($condition['key'], $this->definition)){
+
+                    // Remove the key from the data
+                    unset($conditions[$key]);
+                    continue;
+                }
+
+                // Add the condition to the Query
+                $Query->where($condition["key"], $condition["value"], $condition["operator"], $conjunction);
+            }
+        }
 
         // Retrieve the Results
-        $result = $Query->result();
+        $records = $Query->fetch();
 
-        // Decode JSON Fields
-        foreach($result as $key => $record){
+        // Loop through the records to process them
+        foreach($records as $key => $record){
 
-            // Decode JSON Fields
-            $result[$key]['docvals'] = json_decode($record['docvals'] ?? '[]', true);
-            $result[$key]['doctype']['uuid'] = $this->UUID->toString($record['doctype']['id'].$record['doctype']['template'].$record['doctype']['locale']);
-            $result[$key]['doctype']['locked'] = json_decode($record['doctype']['locked'] ?? '[]', true);
-            $result[$key]['doctype']['permissions'] = json_decode($record['doctype']['permissions'] ?? '[]', true);
-
-            // Set the document's template
-            $result[$key]['doctype']['template'] = [
-                "name" => $result[$key]['doctype']['template'],
-                "path" => $this->Config->root() . DIRECTORY_SEPARATOR . 'Template' . DIRECTORY_SEPARATOR . 'doctype' . DIRECTORY_SEPARATOR . $result[$key]['doctype']['template'],
-            ];
-
-            // Set Content
-            if(!is_file($result[$key]['doctype']['template']['path'])){
-                $result[$key]['doctype']['template']['path'] = $this->Config->root() . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'plugins' . DIRECTORY_SEPARATOR . 'documents' . DIRECTORY_SEPARATOR . 'Template' . DIRECTORY_SEPARATOR . 'doctype' . DIRECTORY_SEPARATOR . $result[$key]['doctype']['template'];
-            }
-            $result[$key]['doctype']['template']['content'] = is_file($result[$key]['doctype']['template']['path']) ? file_get_contents($result[$key]['doctype']['template']['path']) : '';
-
-            // Add the document's template's variables
-            $result[$key]['doctype']['template']['variables'] = $this->vars($result[$key]['doctype']['template']['content']);
+            // Overwrite the record with the processed one
+            $records[$key] = $this->process($record);
         }
 
         // Return the Results
-        return $result[array_key_first($result)] ?? [];
+        return $records;
     }
 
     /**
-     * Retrieve Document's Variables
+     * Retrieve a single record
      *
-     * @param string $string
+     * @param int $id
      * @return array
      */
-    private function vars(string $string): array
+    public function fetch(int $id): array
     {
-        // Regular expression to match the variables in the format %VAR%
-        $pattern = '/{{([^}]+)}}/';
+        // Create the Query
+        $Query = $this->Database->query()
+            ->table($this->table)
+            ->select('*')
+            ->join('owner', 'users', 'username')
+            ->join('doctype', 'doctypes', 'id')
+            ->join('letterhead', 'files', 'id')
+            ->join('organization', 'organizations', 'id')
+            ->filter()
+            ->where('id', 9999, '<>')
+            ->filter()
+            ->where($this->primary, $id)
+            ->limit(1);
 
-        // Find all matches
-        preg_match_all($pattern, $string, $matches);
+        // Retrieve the record
+        $records = $Query->fetch();
 
-        // The variables are in the second element of the $matches array
-        $variables = array_unique($matches[0]);
+        // Loop through the records to process them
+        foreach($records as $key => $record){
 
-        // Return the variables
-        return $variables;
+            // Overwrite the record with the processed one
+            $records[$key] = $this->process($record);
+        }
+
+        // Return the record or an empty array if not found
+        return $records[array_key_first($records)] ?? [];
     }
 
     /**
-     * Replace Variables from an array
+     * Retrieve a single record
      *
-     * @param string $string
-     * @param array $values
-     * @return string
+     * @param string $uuid
+     * @return array
      */
-    private function replace(string $string, array $values): string
+    public function fetchByUUID(string $uuid): array
     {
-        // Replace the placeholders with the corresponding data
-        foreach ($values as $key => $value) {
-            $string = str_replace('{{' . $key . '}}', $value ?? '', $string);
+        // Create the Query
+        $Query = $this->Database->query()
+            ->table($this->table)
+            ->select('*')
+            ->join('owner', 'users', 'username')
+            ->join('doctype', 'doctypes', 'id')
+            ->join('letterhead', 'files', 'id')
+            ->join('organization', 'organizations', 'id')
+            ->filter()
+            ->where('id', 9999, '<>')
+            ->filter()
+            ->where('uuid', $uuid)
+            ->limit(1);
+
+        // Retrieve the record
+        $records = $Query->fetch();
+
+        // Loop through the records to process them
+        foreach($records as $key => $record){
+
+            // Overwrite the record with the processed one
+            $records[$key] = $this->process($record);
         }
 
-        // Return the string
-        return $string;
+        // Return the record or an empty array if not found
+        return $records[array_key_first($records)] ?? [];
+    }
+
+    /**
+     * Process a record
+     *
+     * @param array $record
+     * @return array
+     */
+    protected function process(array $record): array
+    {
+        // Execute the parent process method
+        $record = parent::process($record);
+
+        // Decode JSON Fields
+        foreach($record as $key => $value){
+
+            // Process the doctype
+            if($key === 'doctype' && is_array($value)){
+
+                // Check if the value['locked'] is a valid JSON string
+                if(is_string($value['locked']) && $this->isJson($value['locked'])){
+
+                    // Decode the JSON value
+                    $record[$key]['locked'] = json_decode($value['locked'], true);
+                }
+
+                // Check if the value['permissions'] is a valid JSON string
+                if(is_string($value['permissions']) && $this->isJson($value['permissions'])){
+
+                    // Decode the JSON value
+                    $record[$key]['permissions'] = json_decode($value['permissions'], true);
+                }
+
+                // Generate the UUID for the doctype
+                $record[$key]['uuid'] = $this->UUID->toString($value['id'].$value['template'].$value['locale']);
+
+                // Set the document's template
+                $record[$key]['template'] = [
+                    "name" => $record[$key]['template'],
+                    "path" => $this->Config->root() . DIRECTORY_SEPARATOR . 'Template' . DIRECTORY_SEPARATOR . 'doctype' . DIRECTORY_SEPARATOR . $record[$key]['template'],
+                ];
+
+                // Check if the template path is valid
+                if(!is_file($record[$key]['template']['path'])){
+                    $record[$key]['template']['path'] = $this->Config->root() . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'plugins' . DIRECTORY_SEPARATOR . 'documents' . DIRECTORY_SEPARATOR . 'Template' . DIRECTORY_SEPARATOR . 'doctype' . DIRECTORY_SEPARATOR . $record[$key]['template']['name'];
+                }
+
+                // Set the template's content
+                $record[$key]['template']['content'] = is_file($record[$key]['template']['path']) ? file_get_contents($record[$key]['template']['path']) : '';
+
+                // Add the document's template's variables
+                $record[$key]['template']['variables'] = $this->Helper->Documents->vars($record[$key]['template']['content']);
+            }
+        }
+
+        // Return the processed record
+        return $record;
     }
 
     /**
@@ -254,7 +236,7 @@ class DocumentsModel extends Model {
     public function variables(array $values = []): array
     {
         // Import Global Variables
-        global $AUTH,$LOCALE,$CONFIG,$HELPER;
+        global $AUTH,$LOCALE;
 
         // Set the Log
         $this->Log->set('documents');
@@ -267,7 +249,7 @@ class DocumentsModel extends Model {
 
         // Initialize the variables
         $variables = [
-            'root' => $CONFIG->root() ?? '',
+            'root' => $this->Config->root() ?? '',
             'today' => date('Y-m-d') ?? '',
             'date' => date('Y-m-d') ?? '',
             'now' => date('Y-m-d H:i:s') ?? '',
@@ -435,20 +417,20 @@ class DocumentsModel extends Model {
                         $id = $matches[1];
 
                         // Retrieve the favicon
-                        $content = $HELPER->Favicon->content($values['website']);
-                        $mimetype = $HELPER->Favicon->mimeType($content);
+                        $content = $this->Helper->Favicon->content($values['website']);
+                        $mimetype = $this->Helper->Favicon->mimeType($content);
                         $variables['avatar'] = 'data:' . $mimetype . ';base64,' . base64_encode($content);
                     }
 
-                    // Check if the value is a url starting with /plugins/leads/logo?id=
-                    if(is_string($values['avatar']) && array_key_exists('website',$values) && preg_match('/^\/plugins\/leads\/logo\?id=([0-9]+)$/', $values['avatar'], $matches)){
+                    // Check if the value is a url starting with /plugins/documents/logo?id=
+                    if(is_string($values['avatar']) && array_key_exists('website',$values) && preg_match('/^\/plugins\/documents\/logo\?id=([0-9]+)$/', $values['avatar'], $matches)){
 
                         // Set the ID of the organization
                         $id = $matches[1];
 
                         // Retrieve the favicon
-                        $content = $HELPER->Favicon->content($values['website']);
-                        $mimetype = $HELPER->Favicon->mimeType($content);
+                        $content = $this->Helper->Favicon->content($values['website']);
+                        $mimetype = $this->Helper->Favicon->mimeType($content);
                         $variables['avatar'] = 'data:' . $mimetype . ';base64,' . base64_encode($content);
                     }
 
@@ -459,8 +441,8 @@ class DocumentsModel extends Model {
                         $id = $matches[1];
 
                         // Retrieve the favicon
-                        $content = $HELPER->Favicon->content($values['website']);
-                        $mimetype = $HELPER->Favicon->mimeType($content);
+                        $content = $this->Helper->Favicon->content($values['website']);
+                        $mimetype = $this->Helper->Favicon->mimeType($content);
                         $variables['avatar'] = 'data:' . $mimetype . ';base64,' . base64_encode($content);
                     }
                 }
@@ -515,7 +497,7 @@ class DocumentsModel extends Model {
         $document['watermark'] ? $PDF->watermark($document['watermark']) : null;
         $PDF->template($document['doctype']['template']['path']);
         $PDF->variables($values);
-        $PDF->path($this->Path . DIRECTORY_SEPARATOR . $document['uuid'] . DIRECTORY_SEPARATOR . $this->replace($document['filename'], $values));
+        $PDF->path($this->Path . DIRECTORY_SEPARATOR . $document['uuid'] . DIRECTORY_SEPARATOR . $this->Helper->Documents->replace($document['filename'], $values));
 
         // Set the PDF Security
         if(!empty($document['doctype']['password']) && !is_null($document['doctype']['password'])){

@@ -1,0 +1,73 @@
+<!-- Author: Louis Ouellet - louis@laswitchtech.com -->
+<!-- Title: Authorization Letter -->
+<!-- Paper Size: US Letter -->
+<!-- Width: 700px -->
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>{{title}}</title>
+    </head>
+    <body style="font-family: helvetica; font-size: 14px;width:700px;">
+        <form style="font-family: helvetica; font-size: 14px;width:700px;">
+            <table width="700px"><tr><td width="700px" style="height: 150px;">&nbsp;</td></tr></table>
+            <p style="margin-top: 14px; text-align: right;">To the Attention of the Canada Border Services Agency</p>
+            <p style="margin-top: 14px; text-align: right;"><strong>{{city}}, {{today}}</strong></p>
+            <p style="margin-top: 48px; text-align: justify;"><strong>Subject: {{subject}}</strong></p>
+            <p style="margin-top: 28px; text-align: justify;">Sir/Madam,</p>
+            <p style="margin-top: 14px; text-align: justify;">This letter serves as official authorization for <strong>{{organization_name}}</strong>, whose business number is <strong>{{organization_businessNumber}}</strong> and located at <strong>{{organization_address}}</strong>, <strong>{{organization_city}}</strong>, <strong>{{organization_country}}</strong>, <strong>{{organization_state}}</strong>, <strong>{{organization_zipcode}}</strong>, to act as our agent for the following activities:</p>
+            <ul style="margin-top: 14px;">
+                <li>Obtaining the FIRM report (Pre-CARM),</li>
+                <li>Submitting advance ruling requests,</li>
+                <li>Handling appeals,</li>
+                <li>Drawback</li>
+            </ul>
+            <p style="margin-top: 14px; text-align: justify;">Our importer number is: <input type="text" name="importerNumber" style="margin-left: 4px; padding: 4px 8px;border: 1px solid #fff;border-color: #fff; background-color: #fff; font-size: 14px; width: 150px; height: 22px; vertical-align: middle;" value="{{businessNumber}}RM{{importerExtension}}" required></p>
+            <p style="margin-top: 14px; text-align: justify;">This authorization is valid from <strong>{{today}}</strong> until <strong>{{next_18months}}</strong>.</p>
+            <p style="margin-top: 14px; text-align: justify;">If you have any questions or need further clarification, please do not hesitate to contact the undersigned.</p>
+            <p style="margin-top: 14px; text-align: justify;">Yours sincerely,</p>
+            <table width="700px" style="margin-top: 48px;">
+                <tr>
+                    <td width="336px" style="padding: 4px 8px;">
+                        <p style="margin: 0;font-size: 18px;"><strong>{{name}}</strong></p>
+                        <p style="margin: 0;">{{address}}</p>
+                        <p style="margin: 0;">{{city}}, {{country}}, {{state}}, {{zipcode}}</p>
+                        <p style="margin: 0;">{{phone}}, {{tollfree}}</p>
+                        <table width="336px" style="margin-top: 96px; border-top: 1px solid #000">
+                            <tr>
+                                <td width="336px">{{contact_name}} - {{contact_title}}</td>
+                            </tr>
+                        </table>
+                        <table width="336px" style="margin-top: 24px;">
+                            <tr>
+                                <td width="336px" style="padding-left: 8px;">{{date}}</td>
+                            </tr>
+                            <tr>
+                                <td width="336px" style="padding-left: 8px;border-top: 1px solid #000">Date</td>
+                            </tr>
+                        </table>
+                    </td>
+                    <td width="336px" style="padding: 4px 8px;">
+                        <p style="margin: 0;font-size: 18px;"><strong>{{organization_name}}</strong></p>
+                        <p style="margin: 0;">{{organization_address}}</p>
+                        <p style="margin: 0;">{{organization_city}}, {{organization_country}}, {{organization_state}}, {{organization_zipcode}}</p>
+                        <p style="margin: 0;">{{organization_phone}}, {{organization_tollfree}}</p>
+                        <table width="336px" style="margin-top: 96px; border-top: 1px solid #000">
+                            <tr>
+                                <td width="336px">{{user_name}} - {{user_title}}</td>
+                            </tr>
+                        </table>
+                        <table width="336px" style="margin-top: 24px;">
+                            <tr>
+                                <td width="336px" style="padding-left: 8px;">{{date}}</td>
+                            </tr>
+                            <tr>
+                                <td width="336px" style="padding-left: 8px;border-top: 1px solid #000">Date</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </body>
+</html>

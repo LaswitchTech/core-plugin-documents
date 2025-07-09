@@ -1,0 +1,55 @@
+<!-- Author: Louis Ouellet - louis@laswitchtech.com -->
+<!-- Title: Authorization Letter -->
+<!-- Paper Size: US Letter -->
+<!-- Width: 700px -->
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>{{title}}</title>
+    </head>
+    <body style="font-family: helvetica; font-size: 14px;width:700px;">
+        <table width="700px"><tr><td width="700px" style="height: 150px;">&nbsp;</td></tr></table>
+        <p style="margin-top: 14px; text-align: right;">À l'Attention de l'Agence des Services Frontaliers du Canada</p>
+        <p style="margin-top: 14px; text-align: right;"><strong>{{city}}, {{today}}</strong></p>
+        <p style="margin-top: 48px; text-align: justify;"><strong>Objet : {{subject}}</strong></p>
+        <p style="margin-top: 28px; text-align: justify;">Monsieur/Madame,</p>
+        <p style="margin-top: 14px; text-align: justify;">La présente lettre sert d'autorisation officielle pour <strong>{{organization_name}}</strong>, dont le numéro d'entreprise est <strong>{{organization_businessNumber}}</strong> et situé au <strong>{{organization_address}}</strong>, <strong>{{organization_city}}</strong>, <strong>{{organization_country}}</strong>, <strong>{{organization_state}}</strong>, <strong>{{organization_zipcode}}</strong>, d'agir en tant que mandataire pour les activités suivantes :</p>
+        <ul style="margin-top: 14px;">
+            <li>Obtention du rapport FIRM (Pre-GCRA),</li>
+            <li>Soumission de demandes de décisions anticipées,</li>
+            <li>Gestion des appels</li>
+            <li>Drawback</li>
+        </ul>
+        <p style="margin-top: 14px; text-align: justify;">Notre numéro d'importateur est : <strong>{{businessNumber}}RM{{importerExtension}}</strong></p>
+        <p style="margin-top: 14px; text-align: justify;">Cette autorisation est valide du <strong>{{today}}</strong> jusqu'au <strong>{{next_18months}}</strong>.</p>
+        <p style="margin-top: 14px; text-align: justify;">Si vous avez des questions ou avez besoin de précisions supplémentaires, n'hésitez pas à contacter le soussigné.</p>
+        <p style="margin-top: 14px; text-align: justify;">Veuillez agréer, Monsieur, Madame, l'expression de mes salutations distinguées.</p>
+        <table width="700px" style="margin-top: 48px;">
+            <tr>
+                <td width="336px" style="padding: 4px 8px;">
+                    <p style="margin: 0;font-size: 18px;"><strong>{{name}}</strong></p>
+                    <p style="margin: 0;">{{address}}</p>
+                    <p style="margin: 0;">{{city}}, {{country}}, {{state}}, {{zipcode}}</p>
+                    <p style="margin: 0;">{{phone}}, {{tollfree}}</p>
+                    <table width="336px" style="margin-top: 96px; border-top: 1px solid #000">
+                        <tr>
+                            <td width="336px">{{contact_name}} - {{contact_title}}</td>
+                        </tr>
+                    </table>
+                </td>
+                <td width="336px" style="padding: 4px 8px;">
+                    <p style="margin: 0;font-size: 18px;"><strong>{{organization_name}}</strong></p>
+                    <p style="margin: 0;">{{organization_address}}</p>
+                    <p style="margin: 0;">{{organization_city}}, {{organization_country}}, {{organization_state}}, {{organization_zipcode}}</p>
+                    <p style="margin: 0;">{{organization_phone}}, {{organization_tollfree}}</p>
+                    <table width="336px" style="margin-top: 96px; border-top: 1px solid #000">
+                        <tr>
+                            <td width="336px">{{user_name}} - {{user_title}}</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>
