@@ -1,0 +1,27 @@
+[
+    {
+        "id": 9999,
+        "created": "2025-04-07 15:10:38",
+        "modified": "2025-04-07 15:10:38",
+        "owner": "demo",
+        "filename": null,
+        "doctype": null,
+        "title": null,
+        "subject": null,
+        "author": null,
+        "creator": null,
+        "keywords": null,
+        "docvals": null,
+        "letterhead": null,
+        "watermark": null,
+        "locale": null,
+        "password": null,
+        "uuid": null,
+        "organization": null,
+        "isApproved": null,
+        "approvedOn": null,
+        "isArchived": 0,
+        "targetTable": null,
+        "targetId": null
+    }
+]
