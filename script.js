@@ -22,7 +22,7 @@ const DocumentsModal = function(id){
                 function(modal,component){
 
                     // Styling
-                    component.header.addClass('text-bg-primary');
+                    component.addClass('modal-primary');
                     component.body.addClass('p-0');
                     component.footer.remove();
 
@@ -258,7 +258,7 @@ const DocumentsModalCreate = function(feed = null, defaults = {}, locale = null,
                     const componentModal = component;
 
                     // Style the modal
-                    component.header.addClass('text-bg-success');
+                    component.addClass('modal-success');
                     component.footer.submit.addClass('btn-success').removeClass('btn-link').attr({
                         "style": "border-bottom-right-radius: var(--bs-modal-inner-border-radius) !important;border-bottom-left-radius: var(--bs-modal-inner-border-radius) !important;",
                     }).text(builder.Locale.get('Create'));
@@ -394,7 +394,7 @@ const DocumentsModalVars = function(doc){
             const componentModal = component;
 
             // Styling
-            component.header.addClass('text-bg-warning');
+            component.addClass('modal-warning');
             component.footer.submit.addClass('btn-success').removeClass('btn-link').attr({
                 "style": "border-bottom-right-radius: var(--bs-modal-inner-border-radius) !important;border-bottom-left-radius: var(--bs-modal-inner-border-radius) !important;",
             });
@@ -602,7 +602,7 @@ const DocumentsModalLetterhead = function(doc){
             const componentModal = component;
 
             // Style the modal
-            component.header.addClass('text-bg-primary');
+            component.addClass('modal-primary');
             component.footer.submit.addClass('btn-primary').removeClass('btn-link').attr({
                 "style": "border-bottom-right-radius: var(--bs-modal-inner-border-radius) !important;border-bottom-left-radius: var(--bs-modal-inner-border-radius) !important;",
             }).text(builder.Locale.get('Upload'));
@@ -756,7 +756,7 @@ const DocumentsModalLetterheadRemove = function(doc){
             const componentModal = component;
 
             // Style the modal
-            component.header.addClass('text-bg-danger');
+            component.addClass('modal-danger');
             component.footer.submit.addClass('btn-danger').removeClass('btn-link').attr({
                 "style": "border-bottom-right-radius: var(--bs-modal-inner-border-radius) !important;border-bottom-left-radius: var(--bs-modal-inner-border-radius) !important;",
             }).text(builder.Locale.get('Remove'));
@@ -828,7 +828,7 @@ const DocumentsModalApprove = function(doc){
             const componentModal = component;
 
             // Style the modal
-            component.header.addClass('text-bg-success');
+            component.addClass('modal-success');
             component.footer.submit.addClass('btn-success').removeClass('btn-link').attr({
                 "style": "border-bottom-right-radius: var(--bs-modal-inner-border-radius) !important;border-bottom-left-radius: var(--bs-modal-inner-border-radius) !important;",
             }).text(builder.Locale.get('Approve'));
@@ -900,7 +900,7 @@ const DocumentsModalDisapprove = function(doc){
             const componentModal = component;
 
             // Style the modal
-            component.header.addClass('text-bg-danger');
+            component.addClass('modal-danger');
             component.footer.submit.addClass('btn-danger').removeClass('btn-link').attr({
                 "style": "border-bottom-right-radius: var(--bs-modal-inner-border-radius) !important;border-bottom-left-radius: var(--bs-modal-inner-border-radius) !important;",
             }).text(builder.Locale.get('Disapprove'));
@@ -974,7 +974,7 @@ const DocumentsModalArchive = function(doc, item = null){
             const componentModal = component;
 
             // Style the modal
-            component.header.addClass('text-bg-dark');
+            component.addClass('modal-dark');
             component.footer.submit.addClass('btn-dark').removeClass('btn-link').attr({
                 "style": "border-bottom-right-radius: var(--bs-modal-inner-border-radius) !important;border-bottom-left-radius: var(--bs-modal-inner-border-radius) !important;",
             }).text(builder.Locale.get('Archive'));
@@ -1046,7 +1046,7 @@ const DocumentsModalRecover = function(doc){
             const componentModal = component;
 
             // Style the modal
-            component.header.addClass('text-bg-info');
+            component.addClass('modal-info');
             component.footer.submit.addClass('btn-info').removeClass('btn-link').attr({
                 "style": "border-bottom-right-radius: var(--bs-modal-inner-border-radius) !important;border-bottom-left-radius: var(--bs-modal-inner-border-radius) !important;",
             }).text(builder.Locale.get('Restore'));
