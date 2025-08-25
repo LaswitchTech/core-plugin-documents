@@ -414,7 +414,7 @@ class DocumentsModel extends BaseModel {
     public function variables(array $values = []): array
     {
         // Import Global Variables
-        global $AUTH,$LOCALE;
+        global $AUTH,$LOCALE,$REQUEST;
 
         // Set the Log
         $this->Log->set('documents');
@@ -461,174 +461,98 @@ class DocumentsModel extends BaseModel {
             'approvedOn' => '',
             'keywords' => '',
             'username' => '',
-            'user_name' => '',
-            'user_title' => '',
-            'user_role' => '',
-            'user_address' => '',
-            'user_city' => '',
-            'user_state' => '',
-            'user_country' => '',
-            'user_zipcode' => '',
-            'user_email' => '',
-            'user_phone' => '',
-            'user_mobile' => '',
-            'user_tollfree' => '',
-            'user_fax' => '',
-            'user_locale' => $LOCALE->current(),
-            'user_language' => $locales[$LOCALE->current()] ?? '',
-            'user_avatar' => '',
-            'organization_name' => '',
-            'organization_title' => '',
-            'organization_role' => '',
-            'organization_address' => '',
-            'organization_city' => '',
-            'organization_state' => '',
-            'organization_country' => '',
-            'organization_zipcode' => '',
-            'organization_email' => '',
-            'organization_phone' => '',
-            'organization_mobile' => '',
-            'organization_tollfree' => '',
-            'organization_fax' => '',
-            'organization_website' => '',
-            'organization_businessNumber' => '',
-            'organization_taxExtension' => '',
-            'organization_importerExtension' => '',
-            'organization_locale' => $LOCALE->current(),
-            'organization_language' => $locales[$LOCALE->current()] ?? '',
-            'organization_avatar' => '',
+            'user.name' => '',
+            'user.title' => '',
+            'user.role' => '',
+            'user.address' => '',
+            'user.city' => '',
+            'user.state' => '',
+            'user.country' => '',
+            'user.zipcode' => '',
+            'user.email' => '',
+            'user.phone' => '',
+            'user.mobile' => '',
+            'user.tollfree' => '',
+            'user.fax' => '',
+            'user.locale' => $LOCALE->current(),
+            'user.language' => $locales[$LOCALE->current()] ?? '',
+            'user.avatar' => '',
+            'organization.name' => '',
+            'organization.title' => '',
+            'organization.role' => '',
+            'organization.address' => '',
+            'organization.city' => '',
+            'organization.state' => '',
+            'organization.country' => '',
+            'organization.zipcode' => '',
+            'organization.email' => '',
+            'organization.phone' => '',
+            'organization.mobile' => '',
+            'organization.tollfree' => '',
+            'organization.fax' => '',
+            'organization.website' => '',
+            'organization.businessNumber' => '',
+            'organization.taxExtension' => '',
+            'organization.importerExtension' => '',
+            'organization.locale' => $LOCALE->current(),
+            'organization.language' => $locales[$LOCALE->current()] ?? '',
+            'organization.avatar' => '',
         ];
 
         // Check if user is authenticated
         if(!in_array(get_class($AUTH),["Module","LaswitchTech\Core\Module"]) && $AUTH->isAuthenticated()){
 
-            // Add user's information
+            // Add user's username
             $variables['username'] = $AUTH->user()->username ?? $variables['username'];
-            $variables['user_name'] = $AUTH->user()->vcard('name') ?? $variables['user_name'];
-            $variables['user_title'] = $AUTH->user()->vcard('title') ?? $variables['user_title'];
-            $variables['user_role'] = $AUTH->user()->vcard('role') ?? $variables['user_role'];
-            $variables['user_address'] = $AUTH->user()->vcard('address') ?? $variables['user_address'];
-            $variables['user_city'] = $AUTH->user()->vcard('city') ?? $variables['user_city'];
-            $variables['user_state'] = $AUTH->user()->vcard('state') ?? $variables['user_state'];
-            $variables['user_country'] = $AUTH->user()->vcard('country') ?? $variables['user_country'];
-            $variables['user_zipcode'] = $AUTH->user()->vcard('zipcode') ?? $variables['user_zipcode'];
-            $variables['user_email'] = $AUTH->user()->vcard('email') ?? $variables['user_email'];
-            $variables['user_phone'] = $AUTH->user()->vcard('phone') ?? $variables['user_phone'];
-            $variables['user_mobile'] = $AUTH->user()->vcard('mobile') ?? $variables['user_mobile'];
-            $variables['user_tollfree'] = $AUTH->user()->vcard('tollfree') ?? $variables['user_tollfree'];
-            $variables['user_fax'] = $AUTH->user()->vcard('fax') ?? $variables['user_fax'];
-            $variables['user_locale'] = $AUTH->user()->vcard('locale') ?? $variables['user_locale'];
-            $variables['user_language'] = $locales[$variables['user_locale'] ?? $LOCALE->current()];
-            if(!empty($AUTH->user()->vcard('avatar'))){
-                $variables['user_avatar'] =  'data:'.$AUTH->user()->vcard('avatar')['type'].';base64,' . base64_encode(file_get_contents($this->Config->root() . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . $AUTH->user()->vcard('avatar')['path'] . DIRECTORY_SEPARATOR . $AUTH->user()->vcard('avatar')['uuid']));
-            }
 
-            // Add organization's information
-            $variables['organization_name'] = $AUTH->user()->organization()->name ?? $variables['organization_name'];
-            $variables['organization_title'] = $AUTH->user()->organization()->title ?? $variables['organization_title'];
-            $variables['organization_role'] = $AUTH->user()->organization()->role ?? $variables['organization_role'];
-            $variables['organization_address'] = $AUTH->user()->organization()->address ?? $variables['organization_address'];
-            $variables['organization_city'] = $AUTH->user()->organization()->city ?? $variables['organization_city'];
-            $variables['organization_state'] = $AUTH->user()->organization()->state ?? $variables['organization_state'];
-            $variables['organization_country'] = $AUTH->user()->organization()->country ?? $variables['organization_country'];
-            $variables['organization_zipcode'] = $AUTH->user()->organization()->zipcode ?? $variables['organization_zipcode'];
-            $variables['organization_email'] = $AUTH->user()->organization()->email ?? $variables['organization_email'];
-            $variables['organization_phone'] = $AUTH->user()->organization()->phone ?? $variables['organization_phone'];
-            $variables['organization_mobile'] = $AUTH->user()->organization()->mobile ?? $variables['organization_mobile'];
-            $variables['organization_tollfree'] = $AUTH->user()->organization()->tollfree ?? $variables['organization_tollfree'];
-            $variables['organization_fax'] = $AUTH->user()->organization()->fax ?? $variables['organization_fax'];
-            $variables['organization_website'] = $AUTH->user()->organization()->website ?? $variables['organization_website'];
-            $variables['organization_businessNumber'] = $AUTH->user()->organization()->businessNumber ?? $variables['organization_businessNumber'];
-            $variables['organization_taxExtension'] = $AUTH->user()->organization()->taxExtension ?? $variables['organization_taxExtension'];
-            $variables['organization_importerExtension'] = $AUTH->user()->organization()->importerExtension ?? $variables['organization_importerExtension'];
-            $variables['organization_locale'] = $AUTH->user()->organization()->locale ?? $variables['organization_locale'];
-            $variables['organization_language'] = $locales[$variables['organization_locale']];
-            if($AUTH->user()->organization()->avatar['id']){
-                $variables['organization_avatar'] =  'data:'.$AUTH->user()->organization()->avatar['type'].';base64,' . base64_encode(file_get_contents($this->Config->root() . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . $AUTH->user()->organization()->avatar['path'] . DIRECTORY_SEPARATOR . $AUTH->user()->organization()->avatar['uuid']));
+            // Add Auth's Objects Information
+            foreach($variables as $key => $value){
+                $keys = explode('.', $key);
+                if(in_array($keys[0], ['user','organization']) && isset($keys[1]) && !empty($keys[1])){
+                    switch($keys[0]){
+                        case 'user':
+                            if($keys[1] === 'language') {
+                                $variables[$key] = $locales[$variables[$keys[0].'.locale'] ?? $LOCALE->current()];
+                                break;
+                            }
+                            if($keys[1] === 'avatar') {
+                                $variables[$key] = $this->avatar('/avatar?id='.$AUTH->user()->vcard('id'));
+                                break;
+                            }
+                            $variables[$key] = $AUTH->user()->vcard($keys[1]) ?? $variables[$key];
+                            break;
+                        case 'organization':
+                            if($keys[1] === 'language') {
+                                $variables[$key] = $locales[$variables[$keys[0].'.locale'] ?? $LOCALE->current()];
+                                break;
+                            }
+                            if($keys[1] === 'avatar') {
+                                $variables[$key] = $this->avatar('/avatar?id='.$AUTH->user()->organization()->vcard['id']);
+                                break;
+                            }
+                            $variables[$key] = $AUTH->user()->organization()->{$keys[1]} ?? $variables[$key];
+                            break;
+                    }
+                }
             }
         }
 
         // Add dynamic variables
         foreach($values as $key => $value){
-            $variables[$key] = $value;
-        }
-
-        // Check if an avatar is set
-        if(isset($values['avatar']) && !empty($values['avatar'])){
-            $this->Log->debug('Avatar Type: '.gettype($values['avatar']));
-            $this->Log->debug('Avatar Value: '.$values['avatar']);
-
-            // Check if the value is file id
-            if(filter_var($values['avatar'], FILTER_VALIDATE_INT)!== false){
-
-                // Retrieve the avatar's information
-                $avatar = $this->Database->query()
-                    ->table('files')
-                    ->select('*')
-                    ->filter()
-                    ->where('id', $values['avatar'])
-                    ->limit(1)
-                    ->fetch();
-
-                // Check if the avatar exists
-                if($avatar){
-
-                    // Select the avatar
-                    $avatar = $avatar[array_key_first($avatar)];
-
-                    // Set the avatar's path
-                    $variables['avatar'] = 'data:'.$avatar['type'].';base64,' . base64_encode(file_get_contents($this->Config->root() . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . $avatar['path'] . DIRECTORY_SEPARATOR . $avatar['uuid']));
+            if(is_array($value)){
+                foreach($value as $k => $v){
+                    if(!is_array($v)){
+                        $variables[$key.'.'.$k] = $v;
+                    }
                 }
             } else {
-
-                // Check if the value is a string and a valid path
-                if(is_string($values['avatar']) && is_file($values['avatar'])){
-
-                    // Set the avatar's path
-                    $variables['avatar'] = 'data:' . mime_content_type($values['avatar']) . ';base64,' . base64_encode(file_get_contents($values['avatar']));
-                } else {
-
-                    // Check if the value is a url starting with /plugins/clients/logo?id=
-                    if(is_string($values['avatar']) && array_key_exists('website',$values) && preg_match('/^\/plugins\/clients\/logo\?id=([0-9]+)$/', $values['avatar'], $matches)){
-
-                        // Set the ID of the organization
-                        $id = $matches[1];
-
-                        // Retrieve the favicon
-                        $content = $this->Helper->Favicon->content($values['website']);
-                        $mimetype = $this->Helper->Favicon->mimeType($content);
-                        $variables['avatar'] = 'data:' . $mimetype . ';base64,' . base64_encode($content);
-                    }
-
-                    // Check if the value is a url starting with /plugins/documents/logo?id=
-                    if(is_string($values['avatar']) && array_key_exists('website',$values) && preg_match('/^\/plugins\/documents\/logo\?id=([0-9]+)$/', $values['avatar'], $matches)){
-
-                        // Set the ID of the organization
-                        $id = $matches[1];
-
-                        // Retrieve the favicon
-                        $content = $this->Helper->Favicon->content($values['website']);
-                        $mimetype = $this->Helper->Favicon->mimeType($content);
-                        $variables['avatar'] = 'data:' . $mimetype . ';base64,' . base64_encode($content);
-                    }
-
-                    // Check if the value is a url starting with /plugins/organizations/logo?id=
-                    if(is_string($values['avatar']) && array_key_exists('website',$values) && preg_match('/^\/plugins\/organizations\/logo\?id=([0-9]+)$/', $values['avatar'], $matches)){
-
-                        // Set the ID of the organization
-                        $id = $matches[1];
-
-                        // Retrieve the favicon
-                        $content = $this->Helper->Favicon->content($values['website']);
-                        $mimetype = $this->Helper->Favicon->mimeType($content);
-                        $variables['avatar'] = 'data:' . $mimetype . ';base64,' . base64_encode($content);
-                    }
+                if($key === 'avatar') {
+                    $variables[$key] = $this->avatar($value);
+                    continue;
                 }
+                $variables[$key] = $value;
             }
         }
-
-        // // Replace the placeholders with the corresponding data
-        // $variables['keywords'] = $this->PDF->replaceVars($values['keywords'] ?? '',$values['docvals'] ?? []);
 
         // Return the variables
         return $variables;
