@@ -228,6 +228,184 @@ class DocumentsModel extends BaseModel {
     }
 
     /**
+     * Check if a string is a valid JSON
+     *
+     * @param int|string $string
+     * @return bool
+     */
+    protected function avatar($string): string
+    {
+        // Import Global Variables
+        global $REQUEST;
+
+        // Check if $string is an integer or a string
+        if(is_int($string) || is_string($string)){
+
+            // Check if the value is file id
+            if(filter_var($string, FILTER_VALIDATE_INT)!== false){
+
+                // Retrieve the avatar's information
+                $avatar = $this->Database->query()
+                    ->table('files')
+                    ->select('*')
+                    ->filter()
+                    ->where('id', $string)
+                    ->limit(1)
+                    ->fetch();
+
+                // Check if the avatar exists
+                if($avatar){
+
+                    // Select the avatar
+                    $avatar = $avatar[array_key_first($avatar)];
+
+                    // Set the avatar's path
+                    return 'data:'.$avatar['type'].';base64,' . base64_encode(file_get_contents($this->Config->root() . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . $avatar['path'] . DIRECTORY_SEPARATOR . $avatar['uuid']));
+                }
+            } else {
+
+                // Check if the value is a string and a valid path
+                if(is_string($string) && is_file($string)){
+
+                    // Set the avatar's path
+                    return 'data:' . mime_content_type($string) . ';base64,' . base64_encode(file_get_contents($string));
+                } else {
+
+                    // Check if the value is a url starting with /avatar
+                    if(is_string($string) && preg_match('/^\/avatar/', $string, $matches)){
+
+                        // Set full url
+                        $url = $REQUEST->getHostAddress() . $string;
+
+                        // Check if the URL is valid
+                        if (filter_var($url, FILTER_VALIDATE_URL)) {
+
+                            // Decide if we can allow self-signed (dev/internal) on retry
+                            $hostOnly = parse_url($url, PHP_URL_HOST);
+                            $isPrivateHost = function (string $h = null) : bool {
+                                if (!$h) return false;
+                                if ($h === 'localhost' || preg_match('/\.(local|lan|test)$/i', $h)) return true;
+                                if (filter_var($h, FILTER_VALIDATE_IP)) {
+                                    if (preg_match('#^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)#', $h)) return true;
+                                }
+                                return false;
+                            };
+                            $allowInsecure = $isPrivateHost($hostOnly) || getenv('ALLOW_INSECURE_SSL') === '1';
+
+                            // Small helper to fetch binary + content-type (cURL first, stream fallback)
+                            $fetch = function (string $u, bool $insecure = false) use ($allowInsecure) : array {
+                                $binary = null;
+                                $ctype  = null;
+
+                                // --- cURL path ---
+                                if (function_exists('curl_init')) {
+                                    $ch = curl_init($u);
+                                    $opts = [
+                                        CURLOPT_RETURNTRANSFER => true,
+                                        CURLOPT_FOLLOWLOCATION => true,
+                                        CURLOPT_CONNECTTIMEOUT => 5,
+                                        CURLOPT_TIMEOUT        => 10,
+                                        CURLOPT_USERAGENT      => 'DocumentsModel/1.0',
+                                        CURLOPT_HEADER         => true,
+                                        CURLOPT_HTTPHEADER     => ['Accept: image/*'],
+                                    ];
+
+                                    // SSL verification
+                                    if ($insecure) {
+                                        $opts[CURLOPT_SSL_VERIFYPEER] = false;
+                                        $opts[CURLOPT_SSL_VERIFYHOST] = 0;
+                                    } else {
+                                        $opts[CURLOPT_SSL_VERIFYPEER] = true;
+                                        $opts[CURLOPT_SSL_VERIFYHOST] = 2;
+                                        $cafile = ini_get('openssl.cafile');
+                                        if ($cafile && is_file($cafile)) {
+                                            $opts[CURLOPT_CAINFO] = $cafile;
+                                        }
+                                    }
+
+                                    curl_setopt_array($ch, $opts);
+                                    $resp = curl_exec($ch);
+
+                                    if ($resp === false) {
+                                        $err = curl_error($ch);
+                                        $eno = curl_errno($ch);
+                                        // Log once; no binary returned
+                                        error_log("DocumentsModel avatar fetch cURL error [$eno]: $err" . ($insecure ? ' (insecure)' : ''));
+                                    } else {
+                                        $headerSize = (int) curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+                                        $httpCode   = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                                        $ctype      = curl_getinfo($ch, CURLINFO_CONTENT_TYPE) ?: null;
+                                        $binary     = substr($resp, $headerSize);
+                                        if ($httpCode < 200 || $httpCode >= 300) {
+                                            $binary = null;
+                                            error_log("DocumentsModel avatar fetch HTTP $httpCode from $u");
+                                        }
+                                    }
+                                    curl_close($ch);
+                                }
+
+                                // --- stream fallback ---
+                                if ($binary === null) {
+                                    $context = stream_context_create([
+                                        'http' => ['timeout' => 10, 'method' => 'GET', 'header' => "Accept: image/*\r\n"],
+                                        'ssl'  => [
+                                            'verify_peer'       => !$insecure,
+                                            'verify_peer_name'  => !$insecure,
+                                            'allow_self_signed' => $insecure,
+                                        ],
+                                    ]);
+                                    $data = @file_get_contents($u, false, $context);
+                                    if ($data !== false) {
+                                        $binary = $data;
+                                        if (isset($http_response_header) && is_array($http_response_header)) {
+                                            foreach ($http_response_header as $h) {
+                                                if (stripos($h, 'Content-Type:') === 0) {
+                                                    $ctype = trim(substr($h, 13));
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                return [$binary, $ctype];
+                            };
+
+                            // Try secure first
+                            [$binary, $contentType] = $fetch($url, false);
+
+                            // If that failed, one retry allowing self-signed (for dev/private hosts)
+                            if ($binary === null && $allowInsecure) {
+                                $this->Log->warning("Avatar fetch failed with strict TLS; retrying with self-signed allowed for $hostOnly");
+                                [$binary, $contentType] = $fetch($url, true);
+                            }
+
+                            if ($binary) {
+                                // Normalize/verify MIME
+                                if (!$contentType || stripos($contentType, 'image/') !== 0) {
+                                    if (class_exists('\finfo')) {
+                                        $fi = new \finfo(FILEINFO_MIME_TYPE);
+                                        $detected = $fi->buffer($binary);
+                                        if ($detected) $contentType = $detected;
+                                    }
+                                }
+
+                                if ($contentType && stripos($contentType, 'image/') === 0) {
+                                    return 'data:' . $contentType . ';base64,' . base64_encode($binary);
+                                } else {
+                                    $this->Log->warning("Avatar fetch returned non-image content-type: " . ($contentType ?: 'unknown'));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            return '';
+        }
+    }
+
+    /**
      * Set values from an array
      *
      * @param array $values
