@@ -33,16 +33,16 @@
             <tr>
                 <td width="168px">&nbsp;</td>
                 <td width="336px" style="padding: 4px 8px;">
-                    <p style="margin: 0;font-size: 18px;"><strong>{{organization_name}}</strong></p>
-                    <p style="margin: 0;">{{organization_address}}</p>
-                    <p style="margin: 0;">{{organization_city}}, {{organization_country}}, {{organization_state}}, {{organization_zipcode}}</p>
-                    <p style="margin: 0;">{{organization_phone}}, {{organization_tollfree}}</p>
+                    <p style="margin: 0;font-size: 18px;"><strong>{{organization.name}}</strong></p>
+                    <p style="margin: 0;">{{organization.address}}</p>
+                    <p style="margin: 0;">{{organization.city}}, {{organization.country}}, {{organization.state}}, {{organization.zipcode}}</p>
+                    <p style="margin: 0;">{{organization.phone}}, {{organization.tollfree}}</p>
                 </td>
                 <td width="168px">&nbsp;</td>
             </tr>
         </table>
         <h2 style="margin-top: 32px; margin-bottom: 0px; text-align: justify;">1. Appointment and Authorization</h2>
-        <p style="margin-top: 8px; margin-bottom: 0px; text-align: justify; line-height: 1.25;"><strong>{{name}}</strong> ("Client") hereby appoints <strong>{{organization_name}}</strong> ("Consultant") as agent. The Client agrees to provide all necessary information, documents, records, and authorizations, including the CARM Delegation, enabling the Consultant to apply for and recover overpaid duties and/or any other amounts credited or refunded by federal authorities and other 3rd-parties on behalf of the Client.</p>
+        <p style="margin-top: 8px; margin-bottom: 0px; text-align: justify; line-height: 1.25;"><strong>{{name}}</strong> ("Client") hereby appoints <strong>{{organization.name}}</strong> ("Consultant") as agent. The Client agrees to provide all necessary information, documents, records, and authorizations, including the CARM Delegation, enabling the Consultant to apply for and recover overpaid duties and/or any other amounts credited or refunded by federal authorities and other 3rd-parties on behalf of the Client.</p>
 
         <h2 style="margin-top: 8px; margin-bottom: 0px; text-align: justify;">2. Fees and Payments</h2>
         <p style="margin-top: 8px; margin-bottom: 0px; text-align: justify; line-height: 1.25;">The Consultant will receive a fee equivalent to <strong>{{rate}}%</strong> of the amounts successfully recovered. Fees are payable to the Consultant upon receipt by the Client of credits or refunds issued by governing authorities and other 3rd-parties. If no recovery is made, no fees or expenses will be charged.</p>
@@ -76,7 +76,7 @@
                     <p style="margin: 0;">{{phone}}, {{tollfree}}</p>
                     <table width="336px" style="margin-top: 96px; border-top: 1px solid #000">
                         <tr>
-                            <td width="336px" style="padding-left: 8px;">{{contact_name}} - {{contact_title}}</td>
+                            <td width="336px" style="padding-left: 8px;">{{contact.name}} - {{contact.title}}</td>
                         </tr>
                     </table>
                     <table width="336px" style="margin-top: 24px;">
@@ -89,13 +89,13 @@
                     </table>
                 </td>
                 <td width="336px" style="padding: 4px 8px;">
-                    <p style="margin: 0;font-size: 18px;"><strong>{{organization_name}}</strong></p>
-                    <p style="margin: 0;">{{organization_address}}</p>
-                    <p style="margin: 0;">{{organization_city}}, {{organization_country}}, {{organization_state}}, {{organization_zipcode}}</p>
-                    <p style="margin: 0;">{{organization_phone}}, {{organization_tollfree}}</p>
+                    <p style="margin: 0;font-size: 18px;"><strong>{{organization.name}}</strong></p>
+                    <p style="margin: 0;">{{organization.address}}</p>
+                    <p style="margin: 0;">{{organization.city}}, {{organization.country}}, {{organization.state}}, {{organization.zipcode}}</p>
+                    <p style="margin: 0;">{{organization.phone}}, {{organization.tollfree}}</p>
                     <table width="336px" style="margin-top: 96px; border-top: 1px solid #000">
                         <tr>
-                            <td width="336px" style="padding-left: 8px;">{{user_name}} - {{user_title}}</td>
+                            <td width="336px" style="padding-left: 8px;">{{user.name}} - {{user.title}}</td>
                         </tr>
                     </table>
                     <table width="336px" style="margin-top: 24px;">

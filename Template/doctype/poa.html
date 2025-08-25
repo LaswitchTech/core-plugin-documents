@@ -26,27 +26,27 @@
                 <table width="700px" border="0" cellpadding="0" cellspacing="0" style="margin: 0; padding-top: 4px; padding-left: 4px; border-bottom: 1px solid #000;">
                     <tr>
                         <td width="60px" style="vertical-align: top;">Name - Nom</td>
-                        <td width="640px" style="border: 0; padding-top: 8px; padding-bottom: 4px; font-size: 14px;">{{organization_name}}</td>
+                        <td width="640px" style="border: 0; padding-top: 8px; padding-bottom: 4px; font-size: 14px;">{{organization.name}}</td>
                     </tr>
                 </table>
                 <table width="700px" border="0" cellpadding="0" cellspacing="0" style="margin: 0; padding-top: 4px; padding-left: 4px; border-bottom: 1px solid #000;">
                     <tr>
                         <td width="80px" style="vertical-align: top;">Address - Adresse</td>
-                        <td width="620px" style="border: 0; padding-top: 8px; padding-bottom: 4px; font-size: 14px;">{{organization_address}}</td>
+                        <td width="620px" style="border: 0; padding-top: 8px; padding-bottom: 4px; font-size: 14px;">{{organization.address}}</td>
                     </tr>
                 </table>
                 <table width="700px" border="0" cellpadding="0" cellspacing="0" style="margin: 0; padding-left: 4px; border-bottom: 1px solid #000;">
                     <tr>
                         <td width="120px" style="vertical-align: top; padding-top: 4px;">City/Province - Ville/Province</td>
-                        <td width="330px" style="border: 0; padding-top: 12px; padding-bottom: 4px; font-size: 14px;">{{organization_city}}, {{organization_state}}</td>
+                        <td width="330px" style="border: 0; padding-top: 12px; padding-bottom: 4px; font-size: 14px;">{{organization.city}}, {{organization.state}}</td>
                         <td width="110px" style="border-left: 1px solid #000; vertical-align: top; padding-top: 4px; padding-left: 4px;">Postal code - Code postal</td>
-                        <td width="160px" style="border: 0; padding-top: 12px; padding-bottom: 4px; font-size: 14px;">{{organization_zipcode}}</td>
+                        <td width="160px" style="border: 0; padding-top: 12px; padding-bottom: 4px; font-size: 14px;">{{organization.zipcode}}</td>
                     </tr>
                 </table>
                 <table width="700px" border="0" cellpadding="0" cellspacing="0" style="margin: 0; padding-top: 4px; padding-left: 4px; border-bottom: 1px solid #000;">
                     <tr>
                         <td width="160px" style="vertical-align: top;">Business Number - Numéro d'entreprise</td>
-                        <td width="540px" style="border: 0; padding-top: 8px; padding-bottom: 4px; font-size: 14px;">{{organization_businessNumber}}</td>
+                        <td width="540px" style="border: 0; padding-top: 8px; padding-bottom: 4px; font-size: 14px;">{{organization.businessNumber}}</td>
                     </tr>
                 </table>
                 <!-- Inclusions Details -->
@@ -249,7 +249,7 @@
                             <table width="492px" border="0" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td width="476px" style="border: 1px solid #000; padding: 4px 8px;">
-                                        <input type="text" value="" name="contact_signature" style="width: 460px; font-size: 14px; padding: 4px 8px;" />
+                                        <input type="text" value="" name="contact.signature" style="width: 460px; font-size: 14px; padding: 4px 8px;" />
                                     </td>
                                 </tr>
                             </table>
@@ -263,7 +263,7 @@
                             <table width="492px" border="0" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td width="476px" style="border: 1px solid #000; padding: 4px 8px;">
-                                        <input type="text" value="{{contact_name}}" name="contact_name" style="width: 460px; font-size: 14px; padding: 4px 8px;" />
+                                        <input type="text" value="{{contact.name}}" name="contact.name" style="width: 460px; font-size: 14px; padding: 4px 8px;" />
                                     </td>
                                 </tr>
                             </table>
@@ -277,7 +277,7 @@
                             <table width="492px" border="0" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td width="476px" style="border: 1px solid #000; padding: 4px 8px;">
-                                        <input type="text" value="{{contact_title}}" name="contact_title" style="width: 460px; font-size: 14px; padding: 4px 8px;" />
+                                        <input type="text" value="{{contact.title}}" name="contact.title" style="width: 460px; font-size: 14px; padding: 4px 8px;" />
                                     </td>
                                 </tr>
                             </table>

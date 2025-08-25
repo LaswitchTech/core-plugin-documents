@@ -33,16 +33,16 @@
             <tr>
                 <td width="168px">&nbsp;</td>
                 <td width="336px" style="padding: 4px 8px;">
-                    <p style="margin: 0;font-size: 18px;"><strong>{{organization_name}}</strong></p>
-                    <p style="margin: 0;">{{organization_address}}</p>
-                    <p style="margin: 0;">{{organization_city}}, {{organization_country}}, {{organization_state}}, {{organization_zipcode}}</p>
-                    <p style="margin: 0;">{{organization_phone}}, {{organization_tollfree}}</p>
+                    <p style="margin: 0;font-size: 18px;"><strong>{{organization.name}}</strong></p>
+                    <p style="margin: 0;">{{organization.address}}</p>
+                    <p style="margin: 0;">{{organization.city}}, {{organization.country}}, {{organization.state}}, {{organization.zipcode}}</p>
+                    <p style="margin: 0;">{{organization.phone}}, {{organization.tollfree}}</p>
                 </td>
                 <td width="168px">&nbsp;</td>
             </tr>
         </table>
         <h2 style="margin-top: 32px; margin-bottom: 0px; text-align: justify;">1. Mandat et autorisation</h2>
-        <p style="margin-top: 8px; margin-bottom: 0px; text-align: justify; line-height: 1.25;"><strong>{{name}}</strong> (« Client ») désigne par les présentes <strong>{{organization_name}}</strong> (« Consultant ») à titre de mandataire. Le Client s'engage à fournir toutes les informations, documents, dossiers et autorisations nécessaires, incluant la délégation GCRA, afin de permettre au Consultant d'effectuer les démarches pour récupérer tout montant de droits payés en trop et/ou tout autre crédit ou remboursement accordé par les autorités fédérales ou tierces parties au bénéfice du Client.</p>
+        <p style="margin-top: 8px; margin-bottom: 0px; text-align: justify; line-height: 1.25;"><strong>{{name}}</strong> (« Client ») désigne par les présentes <strong>{{organization.name}}</strong> (« Consultant ») à titre de mandataire. Le Client s'engage à fournir toutes les informations, documents, dossiers et autorisations nécessaires, incluant la délégation GCRA, afin de permettre au Consultant d'effectuer les démarches pour récupérer tout montant de droits payés en trop et/ou tout autre crédit ou remboursement accordé par les autorités fédérales ou tierces parties au bénéfice du Client.</p>
 
         <h2 style="margin-top: 8px; margin-bottom: 0px; text-align: justify;">2. Honoraires et paiements</h2>
         <p style="margin-top: 8px; margin-bottom: 0px; text-align: justify; line-height: 1.25;">Le Consultant recevra des honoraires équivalant à <strong>{{rate}}%</strong> des montants effectivement récupérés. Ces honoraires seront payables au Consultant dès la réception par le Client des crédits ou remboursements des autorités fédérales ou tierces parties. En l'absence de récupération, aucuns frais ni dépenses ne seront facturés.</p>
@@ -76,7 +76,7 @@
                     <p style="margin: 0;">{{phone}}, {{tollfree}}</p>
                     <table width="336px" style="margin-top: 96px; border-top: 1px solid #000">
                         <tr>
-                            <td width="336px" style="padding-left: 8px;">{{contact_name}} - {{contact_title}}</td>
+                            <td width="336px" style="padding-left: 8px;">{{contact.name}} - {{contact.title}}</td>
                         </tr>
                     </table>
                     <table width="336px" style="margin-top: 24px;">
@@ -89,13 +89,13 @@
                     </table>
                 </td>
                 <td width="336px" style="padding: 4px 8px;">
-                    <p style="margin: 0;font-size: 18px;"><strong>{{organization_name}}</strong></p>
-                    <p style="margin: 0;">{{organization_address}}</p>
-                    <p style="margin: 0;">{{organization_city}}, {{organization_country}}, {{organization_state}}, {{organization_zipcode}}</p>
-                    <p style="margin: 0;">{{organization_phone}}, {{organization_tollfree}}</p>
+                    <p style="margin: 0;font-size: 18px;"><strong>{{organization.name}}</strong></p>
+                    <p style="margin: 0;">{{organization.address}}</p>
+                    <p style="margin: 0;">{{organization.city}}, {{organization.country}}, {{organization.state}}, {{organization.zipcode}}</p>
+                    <p style="margin: 0;">{{organization.phone}}, {{organization.tollfree}}</p>
                     <table width="336px" style="margin-top: 96px; border-top: 1px solid #000">
                         <tr>
-                            <td width="336px" style="padding-left: 8px;">{{user_name}} - {{user_title}}</td>
+                            <td width="336px" style="padding-left: 8px;">{{user.name}} - {{user.title}}</td>
                         </tr>
                     </table>
                     <table width="336px" style="margin-top: 24px;">
