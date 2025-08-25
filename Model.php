@@ -282,7 +282,7 @@ class DocumentsModel extends BaseModel {
 
                             // Decide if we can allow self-signed (dev/internal) on retry
                             $hostOnly = parse_url($url, PHP_URL_HOST);
-                            $isPrivateHost = function (string $h = null) : bool {
+                            $isPrivateHost = function (?string $h = null) : bool {
                                 if (!$h) return false;
                                 if ($h === 'localhost' || preg_match('/\.(local|lan|test)$/i', $h)) return true;
                                 if (filter_var($h, FILTER_VALIDATE_IP)) {
