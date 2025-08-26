@@ -185,7 +185,7 @@ class DocumentsModel extends BaseModel {
         foreach($record as $key => $value){
 
             // Process the docvals
-            if($key === 'docvals' && is_array($value)){
+            if($key === 'docvals' && !is_array($value)){
 
                 // Decode the JSON value
                 $record[$key] = json_decode($value ?? '[]', true);
