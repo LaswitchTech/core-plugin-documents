@@ -272,7 +272,7 @@ class DocumentsModel extends BaseModel {
             } else {
 
                 // Check if the value is a string and a valid path
-                if(is_string($string) && is_file($string)){
+                if(is_string($string) && !filter_var($string, FILTER_VALIDATE_URL) && file_exists($this->Config->root() . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . trim($string, '/'))){
 
                     // Set the avatar's path
                     return 'data:' . mime_content_type($string) . ';base64,' . base64_encode(file_get_contents($string));
@@ -407,6 +407,7 @@ class DocumentsModel extends BaseModel {
                     }
                 }
             }
+            return '';
         } else {
             return '';
         }
