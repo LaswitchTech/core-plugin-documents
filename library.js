@@ -260,28 +260,18 @@ builder.add('widgets','documents', class extends builder.ComponentClass {
             return this;
         }
 
-        // Retrieve Notes
-        $.ajax({
-            url: '/api/documents/fetchAll',
-            headers: {'X-CSRF-Authorization': CSRF_KEY},
-            type: 'POST',dataType: 'json',
-            data: {
-                conditions: [
-                    {key: 'targetTable', operator: '=', value: this._properties.targetTable},
-                    {key: 'targetId', operator: '=', value: this._properties.targetId},
-                    {key: 'isArchived', operator: '<>', value: 1},
-                ]
-            },
-            error: function(xhr, status, error) {
-                console.error('Error fetching data:', error);
-                reject(error);
-            },
-            success: function(response) {
+        // Retrieve Records
+        API.endpoint('/documents/fetchAll').data({
+            conditions: [
+                {key: 'targetTable', operator: '=', value: this._properties.targetTable},
+                {key: 'targetId', operator: '=', value: this._properties.targetId},
+                {key: 'isArchived', operator: '<>', value: 1},
+            ]
+        }).execute(function(response){
 
-                // Add Records
-                for(const [key, record] of Object.entries(response.records)){
-                    self.add(record);
-                }
+            // Add Records
+            for(const [key, record] of Object.entries(response.records)){
+                self.add(record);
             }
         });
 
@@ -489,166 +479,159 @@ builder.add('widgets','documents', class extends builder.ComponentClass {
                                     const parent = component.dialog;
 
                                     // AJAX Request
-                                    $.ajax({
-                                        url: '/api/documents/fetch?id=' + id,
-                                        headers: {'X-CSRF-Authorization': CSRF_KEY},
-                                        type: 'GET',dataType: 'json',
-                                        error: function(xhr, status, error) {
-                                            console.error('Error fetching document:', error);
-                                            reject(new Error(self._builder.Locale.get('Failed to fetch document')));
-                                        },
-                                        success: function(response) {
+                                    API.endpoint('/documents/fetch?id=' + id).execute(function(response){
 
-                                            // Set the record
-                                            const documentRecord = response.record;
+                                        // Set the record
+                                        const documentRecord = response.record;
 
-                                            // Add the Preview
-                                            component.body.viewer = self._builder.Component(
-                                                "pdfviewer",
-                                                component.body,
-                                                {
-                                                    filename: documentRecord.filename,
-                                                    url:"/documents/get?uuid="+documentRecord.uuid,
-                                                    scale: 1,
-                                                    password: documentRecord.doctype.uuid,
-                                                    pageNum: 1,
-                                                    verticalScroll: true,
-                                                    renderText: false,
-                                                    smallToolbar: true,
-                                                },
-                                                function(viewer,component){
+                                        // Add the Preview
+                                        component.body.viewer = self._builder.Component(
+                                            "pdfviewer",
+                                            component.body,
+                                            {
+                                                filename: documentRecord.filename,
+                                                url:"/documents/get?uuid="+documentRecord.uuid,
+                                                scale: 1,
+                                                password: documentRecord.doctype.uuid,
+                                                pageNum: 1,
+                                                verticalScroll: true,
+                                                renderText: false,
+                                                smallToolbar: true,
+                                            },
+                                            function(viewer,component){
 
-                                                    // Styling
-                                                    component.removeClass('rounded').addClass('rounded-bottom');
-                                                    component.toolbar.removeClass('rounded-top');
+                                                // Styling
+                                                component.removeClass('rounded').addClass('rounded-bottom');
+                                                component.toolbar.removeClass('rounded-top');
 
-                                                    // Add action button Archive
-                                                    if(documentRecord.isArchived == 0){
-                                                        component.toolbar.actions.archive = $(document.createElement('button')).attr({
+                                                // Add action button Archive
+                                                if(documentRecord.isArchived == 0){
+                                                    component.toolbar.actions.archive = $(document.createElement('button')).attr({
+                                                        "type": "button",
+                                                        "class": "btn btn-dark",
+                                                    }).prependTo(component.toolbar.actions);
+                                                    component.toolbar.actions.archive.icon = $(document.createElement('i')).addClass('bi bi-archive').prependTo(component.toolbar.actions.archive);
+                                                    component.toolbar.actions.archive.click(function(){
+
+                                                        // Close the modal
+                                                        modal.hide();
+
+                                                        // Open the archive
+                                                        self.archive(documentRecord.id);
+                                                    });
+                                                } else {
+                                                    component.toolbar.actions.archive = $(document.createElement('button')).attr({
+                                                        "type": "button",
+                                                        "class": "btn btn-info",
+                                                    }).prependTo(component.toolbar.actions);
+                                                    component.toolbar.actions.archive.icon = $(document.createElement('i')).addClass('bi bi-arrow-counterclockwise').prependTo(component.toolbar.actions.archive);
+                                                    component.toolbar.actions.archive.click(function(){
+
+                                                        // Close the modal
+                                                        modal.hide();
+
+                                                        // Open the archive
+                                                        self.archive(documentRecord.id);
+                                                    });
+                                                }
+
+                                                // Add action button Approve
+                                                if(documentRecord.isApproved == 0){
+                                                    component.toolbar.actions.approve = $(document.createElement('button')).attr({
+                                                        "type": "button",
+                                                        "class": "btn btn-success",
+                                                    }).text(builder.Locale.get('Approve')).prependTo(component.toolbar.actions);
+                                                    component.toolbar.actions.approve.icon = $(document.createElement('i')).addClass('me-1 bi bi-check2').prependTo(component.toolbar.actions.approve);
+                                                    component.toolbar.actions.approve.click(function(){
+
+                                                        // Close the modal
+                                                        modal.hide();
+
+                                                        // Open the approve
+                                                        self.approve(documentRecord.id, true);
+                                                    });
+                                                } else {
+                                                    component.toolbar.actions.approve = $(document.createElement('button')).attr({
+                                                        "type": "button",
+                                                        "class": "btn btn-danger",
+                                                    }).text(builder.Locale.get('Disapprove')).prependTo(component.toolbar.actions);
+                                                    component.toolbar.actions.approve.icon = $(document.createElement('i')).addClass('me-1 bi bi-ban').prependTo(component.toolbar.actions.approve);
+                                                    component.toolbar.actions.approve.click(function(){
+
+                                                        // Close the modal
+                                                        modal.hide();
+
+                                                        // Open the approve
+                                                        self.disapprove(documentRecord.id, true);
+                                                    });
+                                                }
+
+                                                // // Add action button Secure
+                                                // component.toolbar.actions.secure = $(document.createElement('button')).attr({
+                                                //     "type": "button",
+                                                //     "class": "btn btn-light",
+                                                // }).text(builder.Locale.get('Secure')).prependTo(component.toolbar.actions);
+                                                // component.toolbar.actions.secure.icon = $(document.createElement('i')).addClass('me-1 bi bi-lock').prependTo(component.toolbar.actions.secure);
+                                                // component.toolbar.actions.secure.click(function(){
+                                                //     console.log('Secure');
+                                                // });
+
+                                                // Add action button Variables
+                                                if(documentRecord.isApproved == 0){
+                                                    component.toolbar.actions.docvals = $(document.createElement('button')).attr({
+                                                        "type": "button",
+                                                        "class": "btn btn-warning",
+                                                    }).text(builder.Locale.get('Variables')).prependTo(component.toolbar.actions);
+                                                    component.toolbar.actions.docvals.icon = $(document.createElement('i')).addClass('me-1 bi bi-list-check').prependTo(component.toolbar.actions.docvals);
+                                                    component.toolbar.actions.docvals.click(function(){
+
+                                                        // Close the modal
+                                                        modal.hide();
+
+                                                        // Open the setVariables
+                                                        self.setVariables(documentRecord.id, true);
+                                                    });
+                                                }
+
+                                                // Add action button Letterhead
+                                                if(documentRecord.doctype.hasLetterhead == 1 && documentRecord.isApproved == 0){
+                                                    if(documentRecord.letterhead.id == null){
+                                                        component.toolbar.actions.letterhead = $(document.createElement('button')).attr({
                                                             "type": "button",
-                                                            "class": "btn btn-dark",
-                                                        }).prependTo(component.toolbar.actions);
-                                                        component.toolbar.actions.archive.icon = $(document.createElement('i')).addClass('bi bi-archive').prependTo(component.toolbar.actions.archive);
-                                                        component.toolbar.actions.archive.click(function(){
+                                                            "class": "btn btn-primary",
+                                                        }).text(builder.Locale.get('Letterhead')).prependTo(component.toolbar.actions);
+                                                        component.toolbar.actions.letterhead.icon = $(document.createElement('i')).addClass('me-1 bi bi-file-earmark-arrow-up').prependTo(component.toolbar.actions.letterhead);
+                                                        component.toolbar.actions.letterhead.click(function(){
 
                                                             // Close the modal
                                                             modal.hide();
 
-                                                            // Open the archive
-                                                            self.archive(documentRecord.id);
+                                                            // Open the addLetterhead
+                                                            self.addLetterhead(documentRecord.id, true);
                                                         });
                                                     } else {
-                                                        component.toolbar.actions.archive = $(document.createElement('button')).attr({
-                                                            "type": "button",
-                                                            "class": "btn btn-info",
-                                                        }).prependTo(component.toolbar.actions);
-                                                        component.toolbar.actions.archive.icon = $(document.createElement('i')).addClass('bi bi-arrow-counterclockwise').prependTo(component.toolbar.actions.archive);
-                                                        component.toolbar.actions.archive.click(function(){
-
-                                                            // Close the modal
-                                                            modal.hide();
-
-                                                            // Open the archive
-                                                            self.archive(documentRecord.id);
-                                                        });
-                                                    }
-
-                                                    // Add action button Approve
-                                                    if(documentRecord.isApproved == 0){
-                                                        component.toolbar.actions.approve = $(document.createElement('button')).attr({
-                                                            "type": "button",
-                                                            "class": "btn btn-success",
-                                                        }).text(builder.Locale.get('Approve')).prependTo(component.toolbar.actions);
-                                                        component.toolbar.actions.approve.icon = $(document.createElement('i')).addClass('me-1 bi bi-check2').prependTo(component.toolbar.actions.approve);
-                                                        component.toolbar.actions.approve.click(function(){
-
-                                                            // Close the modal
-                                                            modal.hide();
-
-                                                            // Open the approve
-                                                            self.approve(documentRecord.id, true);
-                                                        });
-                                                    } else {
-                                                        component.toolbar.actions.approve = $(document.createElement('button')).attr({
+                                                        component.toolbar.actions.letterhead = $(document.createElement('button')).attr({
                                                             "type": "button",
                                                             "class": "btn btn-danger",
-                                                        }).text(builder.Locale.get('Disapprove')).prependTo(component.toolbar.actions);
-                                                        component.toolbar.actions.approve.icon = $(document.createElement('i')).addClass('me-1 bi bi-ban').prependTo(component.toolbar.actions.approve);
-                                                        component.toolbar.actions.approve.click(function(){
+                                                        }).text(builder.Locale.get('Letterhead')).prependTo(component.toolbar.actions);
+                                                        component.toolbar.actions.letterhead.icon = $(document.createElement('i')).addClass('me-1 bi bi-file-earmark-x').prependTo(component.toolbar.actions.letterhead);
+                                                        component.toolbar.actions.letterhead.click(function(){
 
                                                             // Close the modal
                                                             modal.hide();
 
-                                                            // Open the approve
-                                                            self.disapprove(documentRecord.id, true);
+                                                            // Open the addLetterhead
+                                                            self.removeLetterhead(documentRecord.id, true);
                                                         });
                                                     }
+                                                }
 
-                                                    // // Add action button Secure
-                                                    // component.toolbar.actions.secure = $(document.createElement('button')).attr({
-                                                    //     "type": "button",
-                                                    //     "class": "btn btn-light",
-                                                    // }).text(builder.Locale.get('Secure')).prependTo(component.toolbar.actions);
-                                                    // component.toolbar.actions.secure.icon = $(document.createElement('i')).addClass('me-1 bi bi-lock').prependTo(component.toolbar.actions.secure);
-                                                    // component.toolbar.actions.secure.click(function(){
-                                                    //     console.log('Secure');
-                                                    // });
-
-                                                    // Add action button Variables
-                                                    if(documentRecord.isApproved == 0){
-                                                        component.toolbar.actions.docvals = $(document.createElement('button')).attr({
-                                                            "type": "button",
-                                                            "class": "btn btn-warning",
-                                                        }).text(builder.Locale.get('Variables')).prependTo(component.toolbar.actions);
-                                                        component.toolbar.actions.docvals.icon = $(document.createElement('i')).addClass('me-1 bi bi-list-check').prependTo(component.toolbar.actions.docvals);
-                                                        component.toolbar.actions.docvals.click(function(){
-
-                                                            // Close the modal
-                                                            modal.hide();
-
-                                                            // Open the setVariables
-                                                            self.setVariables(documentRecord.id, true);
-                                                        });
-                                                    }
-
-                                                    // Add action button Letterhead
-                                                    if(documentRecord.doctype.hasLetterhead == 1 && documentRecord.isApproved == 0){
-                                                        if(documentRecord.letterhead.id == null){
-                                                            component.toolbar.actions.letterhead = $(document.createElement('button')).attr({
-                                                                "type": "button",
-                                                                "class": "btn btn-primary",
-                                                            }).text(builder.Locale.get('Letterhead')).prependTo(component.toolbar.actions);
-                                                            component.toolbar.actions.letterhead.icon = $(document.createElement('i')).addClass('me-1 bi bi-file-earmark-arrow-up').prependTo(component.toolbar.actions.letterhead);
-                                                            component.toolbar.actions.letterhead.click(function(){
-
-                                                                // Close the modal
-                                                                modal.hide();
-
-                                                                // Open the addLetterhead
-                                                                self.addLetterhead(documentRecord.id, true);
-                                                            });
-                                                        } else {
-                                                            component.toolbar.actions.letterhead = $(document.createElement('button')).attr({
-                                                                "type": "button",
-                                                                "class": "btn btn-danger",
-                                                            }).text(builder.Locale.get('Letterhead')).prependTo(component.toolbar.actions);
-                                                            component.toolbar.actions.letterhead.icon = $(document.createElement('i')).addClass('me-1 bi bi-file-earmark-x').prependTo(component.toolbar.actions.letterhead);
-                                                            component.toolbar.actions.letterhead.click(function(){
-
-                                                                // Close the modal
-                                                                modal.hide();
-
-                                                                // Open the addLetterhead
-                                                                self.removeLetterhead(documentRecord.id, true);
-                                                            });
-                                                        }
-                                                    }
-
-                                                    // Resolve the promise
-                                                    resolve();
-                                                },
-                                            );
-                                        },
+                                                // Resolve the promise
+                                                resolve();
+                                            },
+                                        );
+                                    },function(xhr, status, error){
+                                        reject(new Error(self._builder.Locale.get('Failed to fetch document')));
                                     });
                                 } catch (error) {
                                     console.error('Error in document edit modal:', error);
@@ -694,103 +677,86 @@ builder.add('widgets','documents', class extends builder.ComponentClass {
                                 const parent = component.dialog;
 
                                 // AJAX Request
-                                $.ajax({
-                                    url: '/api/doctypes/fetchAll',
-                                    headers: {'X-CSRF-Authorization': CSRF_KEY},
-                                    type: 'POST',dataType: 'json',
-                                    data: {
-                                        conditions: [
-                                            {key: 'isArchived', operator: '<>', value: 1},
-                                        ]
-                                    },
-                                    error: function(xhr, status, error) {
-                                        console.error('Error fetching document types:', error);
-                                        reject(new Error(self._builder.Locale.get('Failed to fetch document types')));
-                                    },
-                                    success: function(response) {
+                                API.endpoint('/doctypes/fetchAll').data({
+                                    conditions: [
+                                        {key: 'isArchived', operator: '<>', value: 1},
+                                    ]
+                                }).execute(function(response){
 
-                                        // Generate document types
-                                        var types = [];
-                                        var value = null;
-                                        for(const [key, type] of Object.entries(response.records)){
-                                            if(self._properties.locale === type.locale){
-                                                types.push({id: type.id,text: type.title});
-                                                if(type.name == doctype){
-                                                    value = type.id;
-                                                }
+                                    // Generate document types
+                                    var types = [];
+                                    var value = null;
+                                    for(const [key, type] of Object.entries(response.records)){
+                                        if(self._properties.locale === type.locale){
+                                            types.push({id: type.id,text: type.title});
+                                            if(type.name == doctype){
+                                                value = type.id;
                                             }
                                         }
+                                    }
 
-                                        // Create the Form
-                                        self._builder.Utility(
-                                            'form',
-                                            component.body,
-                                            {
-                                                callback: {
-                                                    val: function(values){
-                                                        // Set the default values
-                                                        values.targetTable = self._properties.targetTable;
-                                                        values.targetId = self._properties.targetId;
-                                                        values.locale = self._properties.locale;
-                                                        values.docvals = self._properties.docvals;
-                                                        return values;
-                                                    },
-                                                    submit: function(form){
+                                    // Create the Form
+                                    self._builder.Utility(
+                                        'form',
+                                        component.body,
+                                        {
+                                            callback: {
+                                                val: function(values){
+                                                    // Set the default values
+                                                    values.targetTable = self._properties.targetTable;
+                                                    values.targetId = self._properties.targetId;
+                                                    values.locale = self._properties.locale;
+                                                    values.docvals = self._properties.docvals;
+                                                    return values;
+                                                },
+                                                submit: function(form){
 
-                                                        // Show the modal spinner
-                                                        modal.spinner(true);
+                                                    // Show the modal spinner
+                                                    modal.spinner(true);
 
-                                                        // AJAX Request
-                                                        $.ajax({
-                                                            url: '/api/documents/create',
-                                                            headers: {'X-CSRF-Authorization': CSRF_KEY},
-                                                            type: 'POST',dataType: 'json',
-                                                            data: form.val(),
-                                                            error: function(xhr, status, error) {
-                                                                console.error('Error creating document:', error);
-                                                            },
-                                                            success: function(response) {
+                                                    // AJAX Request
+                                                    API.endpoint('/documents/create').data(form.val()).execute(function(response){
 
-                                                                // Add the new document to the explorer
-                                                                self.add(response.record);
+                                                        // Add the new document to the explorer
+                                                        self.add(response.record);
 
-                                                                // Hide the modal
-                                                                modal.hide();
-                                                            }
-                                                        });
+                                                        // Hide the modal
+                                                        modal.hide();
+                                                    });
+                                                },
+                                            }
+                                        },
+                                        function(form,component){
+
+                                            // Add event listener on the modal submit button
+                                            parent.content.footer.submit.click(function(e){
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                form.submit();
+                                            });
+
+                                            // type
+                                            form.add(
+                                                'select2',
+                                                {
+                                                    name: 'type',
+                                                    label: self._builder.Locale.get('Type'),
+                                                    placeholder: self._builder.Locale.get('Select a type'),
+                                                    options: types,
+                                                    value: value,
+                                                    required: true,
+                                                    class: {
+                                                        component: 'bg-gray-200 p-3 py-2 rounded-0',
                                                     },
                                                 }
-                                            },
-                                            function(form,component){
+                                            );
 
-                                                // Add event listener on the modal submit button
-                                                parent.content.footer.submit.click(function(e){
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    form.submit();
-                                                });
-
-                                                // type
-                                                form.add(
-                                                    'select2',
-                                                    {
-                                                        name: 'type',
-                                                        label: self._builder.Locale.get('Type'),
-                                                        placeholder: self._builder.Locale.get('Select a type'),
-                                                        options: types,
-                                                        value: value,
-                                                        required: true,
-                                                        class: {
-                                                            component: 'bg-gray-200 p-3 py-2 rounded-0',
-                                                        },
-                                                    }
-                                                );
-
-                                                // Resolve the promise
-                                                resolve();
-                                            },
-                                        );
-                                    }
+                                            // Resolve the promise
+                                            resolve();
+                                        },
+                                    );
+                                },function(xhr, status, error){
+                                    reject(new Error(self._builder.Locale.get('Failed to fetch document types')));
                                 });
                             } catch (error) {
                                 console.error('Error in document create modal:', error);
@@ -835,30 +801,23 @@ builder.add('widgets','documents', class extends builder.ComponentClass {
                             const file = self._documents[id];
 
                             // AJAX Request - Archive the document
-                            $.ajax({
-                                url: '/api/documents/archive?id='+id,
-                                type: 'GET',dataType: 'json',
-                                error: function(xhr, status, error) {
-                                    console.error('Error updating document:', error);
-                                },
-                                success: function(response) {
+                            API.endpoint('/documents/archive?id='+id).execute(function(response){
 
-                                    // Remove the document
-                                    file.remove();
-                                    delete self._documents[id];
+                                // Remove the document
+                                file.remove();
+                                delete self._documents[id];
 
-                                    // Remove from the selection
-                                    self._selection = self._selection.filter(f => f !== id);
+                                // Remove from the selection
+                                self._selection = self._selection.filter(f => f !== id);
 
-                                    // Update the counter
-                                    self._component.controls.selection.count.text(self._selection.length + ' ' + self._builder.Locale.get('selected'));
+                                // Update the counter
+                                self._component.controls.selection.count.text(self._selection.length + ' ' + self._builder.Locale.get('selected'));
 
-                                    // Check if the selection is empty
-                                    if(documentId === null || self._selection.length === 0){
+                                // Check if the selection is empty
+                                if(documentId === null || self._selection.length === 0){
 
-                                        // Close the modal
-                                        modal.hide();
-                                    }
+                                    // Close the modal
+                                    modal.hide();
                                 }
                             });
                         }
@@ -925,17 +884,8 @@ builder.add('widgets','documents', class extends builder.ComponentClass {
                         modal.spinner(true);
 
                         // AJAX Request
-                        $.ajax({
-                            url: '/api/documents/approve?id='+documentId,
-                            type: 'GET',dataType: 'json',
-                            error: function(xhr, status, error) {
-                                console.error('Error updating document:', error);
-                            },
-                            success: function(response) {
-
-                                // Hide the modal
-                                modal.hide();
-                            }
+                        API.endpoint('/documents/approve?id='+documentId).execute(function(response){
+                            modal.hide();
                         });
                     },
                 },
@@ -977,17 +927,8 @@ builder.add('widgets','documents', class extends builder.ComponentClass {
                         modal.spinner(true);
 
                         // AJAX Request
-                        $.ajax({
-                            url: '/api/documents/disapprove?id='+documentId,
-                            type: 'GET',dataType: 'json',
-                            error: function(xhr, status, error) {
-                                console.error('Error updating document:', error);
-                            },
-                            success: function(response) {
-
-                                // Hide the modal
-                                modal.hide();
-                            }
+                        API.endpoint('/documents/disapprove?id='+documentId).execute(function(response){
+                            modal.hide();
                         });
                     },
                 },
@@ -1061,32 +1002,10 @@ builder.add('widgets','documents', class extends builder.ComponentClass {
                                             file.checksum = checksum;
 
                                             // AJAX Request
-                                            $.ajax({
-                                                url: '/api/files/upload',
-                                                headers: {'X-CSRF-Authorization': CSRF_KEY},
-                                                type: 'POST',dataType: 'json',
-                                                data: file,
-                                                error: function(xhr, status, error) {
-                                                    console.error('Error uploading letterhead file:', error);
-                                                },
-                                                success: function(response) {
-
-                                                    // AJAX Request
-                                                    $.ajax({
-                                                        url: '/api/documents/update?id='+documentId,
-                                                        headers: {'X-CSRF-Authorization': CSRF_KEY},
-                                                        type: 'POST',dataType: 'json',
-                                                        data: {letterhead: response.record.id},
-                                                        error: function(xhr, status, error) {
-                                                            console.error('Error updating document with letterhead:', error);
-                                                        },
-                                                        success: function(response) {
-
-                                                            // Hide the modal
-                                                            modal.hide();
-                                                        }
-                                                    });
-                                                }
+                                            API.endpoint('/files/upload').data(file).execute(function(response){
+                                                API.endpoint('/documents/update?id='+documentId).data({letterhead: response.record.id}).execute(function(response){
+                                                    modal.hide();
+                                                });
                                             });
                                         });
                                     }
@@ -1155,19 +1074,8 @@ builder.add('widgets','documents', class extends builder.ComponentClass {
                         modal.spinner(true);
 
                         // AJAX Request
-                        $.ajax({
-                            url: '/api/documents/update?id='+documentId,
-                            headers: {'X-CSRF-Authorization': CSRF_KEY},
-                            type: 'POST',dataType: 'json',
-                            data: {letterhead: null},
-                            error: function(xhr, status, error) {
-                                console.error('Error updating document:', error);
-                            },
-                            success: function(response) {
-
-                                // Hide the modal
-                                modal.hide();
-                            }
+                        API.endpoint('/documents/update?id='+documentId).data({letterhead: null}).execute(function(response){
+                            modal.hide();
                         });
                     },
                 },
@@ -1211,171 +1119,138 @@ builder.add('widgets','documents', class extends builder.ComponentClass {
                                 const parent = component.dialog;
 
                                 // Retrieve the libraries
-                                $.ajax({
-                                    url: '/api/library/fetch',
-                                    type: 'GET',dataType: 'json',
-                                    error: function(xhr, status, error) {
-                                        console.error('Error fetching libraries:', error);
-                                        reject(new Error(self._builder.Locale.get('Failed to fetch libraries')));
-                                    },
-                                    success: function(library) {
+                                API.endpoint('/library/fetch').execute(function(library){
 
-                                        // AJAX Request
-                                        $.ajax({
-                                            url: '/api/documents/fetch?id=' + documentId,
-                                            headers: {'X-CSRF-Authorization': CSRF_KEY},
-                                            type: 'GET',dataType: 'json',
-                                            error: function(xhr, status, error) {
-                                                console.error('Error fetching document:', error);
-                                                reject(new Error(self._builder.Locale.get('Failed to fetch document')));
-                                            },
-                                            success: function(response) {
+                                    // AJAX Request
+                                    API.endpoint('/documents/fetch?id=' + documentId).execute(function(response){
 
-                                                // Set the record
-                                                const documentRecord = response.record;
-                                                var contacts = null;
+                                        // Set the record
+                                        const documentRecord = response.record;
+                                        var contacts = null;
 
-                                                // Create the Form
-                                                self._builder.Utility(
-                                                    'form',
-                                                    component.body,
-                                                    {
-                                                        class: {
-                                                            component: 'row row-cols-1 row-cols-md-2 g-2',
-                                                        },
-                                                        callback: {
-                                                            val: function(values){
-                                                                for(const [key, value] of Object.entries(documentRecord.docvals)){
-                                                                    if(typeof values[key] === 'undefined'){
-                                                                        values[key] = value;
-                                                                    }
-                                                                }
-                                                                if(typeof values.contact !== 'undefined' && contacts[values.contact]){
-                                                                    values['contact'] = contacts[values.contact].vcard;
-                                                                }
-                                                                return {docvals: values};
-                                                            },
-                                                            submit: function(form){
-
-                                                                // Show the modal spinner
-                                                                modal.spinner(true);
-
-                                                                // AJAX Request
-                                                                $.ajax({
-                                                                    url: '/api/documents/update?id='+documentRecord.id,
-                                                                    headers: {'X-CSRF-Authorization': CSRF_KEY},
-                                                                    type: 'POST',dataType: 'json',
-                                                                    data: form.val(),
-                                                                    error: function(xhr, status, error) {
-                                                                        console.error('Error updating document:', error);
-                                                                    },
-                                                                    success: function(response) {
-
-                                                                        // Hide the modal
-                                                                        modal.hide();
-                                                                    }
-                                                                });
-                                                            },
-                                                        }
-                                                    },
-                                                    function(form,component){
-
-                                                        // Add event listener on the modal submit button
-                                                        parent.content.footer.submit.click(function(e){
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            form.submit();
-                                                        });
-
-                                                        // Loop through the variables
-                                                        for(const [key, variable] of Object.entries(documentRecord.doctype.template.variables)){
-
-                                                            const name = variable.replace(/{{/g, '').replace(/}}/g, '');
-                                                            const label = builder.Helper.ucwords(variable.replace(/{{/g, '').replace(/}}/g, '').replace(/\./g, ' '));
-                                                            const type = self._fieldType(name.split('.')[1] ?? name);
-
-                                                            // Check if the variable is in the documentRecord.doctype.locked array
-                                                            if(!documentRecord.doctype.locked.includes(name)){
-
-                                                                // Generate field types
-                                                                switch(name.split('.')[0] ?? name){
-                                                                    case 'contact':
-                                                                        if(contacts === null){
-                                                                            contacts = {};
-                                                                            form.add(
-                                                                                'select2',
-                                                                                {
-                                                                                    name: name.split('.')[0] ?? name,
-                                                                                    label: self._builder.Locale.get(name.split('.')[0] ?? name),
-                                                                                    placeholder: self._builder.Locale.get('Select '+(name.split('.')[0] ?? name).toLowerCase()),
-                                                                                    options: [],
-                                                                                    value: documentRecord.docvals[name] ?? '',
-                                                                                    class: {
-                                                                                        component: 'col',
-                                                                                    },
-                                                                                },
-                                                                                function(input){
-
-                                                                                    // Retrieve records
-                                                                                    $.ajax({
-                                                                                        url: '/api/contacts/fetchAll',
-                                                                                        headers: {'X-CSRF-Authorization': CSRF_KEY},
-                                                                                        type: 'POST',dataType: 'json',
-                                                                                        data: {
-                                                                                            conditions: [
-                                                                                                {key: 'targetTable', operator: '=', value: self._properties.targetTable},
-                                                                                                {key: 'targetId', operator: '=', value: self._properties.targetId},
-                                                                                                {key: 'isArchived', operator: '<>', value: 1},
-                                                                                            ]
-                                                                                        },
-                                                                                        error: function(xhr, status, error) {
-                                                                                            console.error('Error fetching data:', error);
-                                                                                        },
-                                                                                        success: function(response) {
-
-                                                                                            // Add Records
-                                                                                            for(const [key, record] of Object.entries(response.records)){
-                                                                                                contacts[key] = record;
-                                                                                                if(record.vcard.role.includes('Signatory')){
-                                                                                                    input.add(key, record.vcard.name + (record.vcard.organization ? ' ('+record.vcard.organization+')' : '') + ' <' + (record.vcard.email ? record.vcard.email : self._builder.Locale.get('no email')) + '>' + (record.vcard.title ? ' - '+record.vcard.title : ''));
-                                                                                                }
-                                                                                            }
-                                                                                        }
-                                                                                    });
-                                                                                }
-                                                                            );
-                                                                        }
-                                                                        break;
-                                                                    default:
-                                                                        switch(name.split('.')[1] ?? name){
-                                                                            default:
-                                                                                form.add(
-                                                                                    type,
-                                                                                    {
-                                                                                        name: name,
-                                                                                        label: self._builder.Locale.get(label),
-                                                                                        placeholder: self._builder.Locale.get('Enter '+(name.split('.')[1] ?? name).toLowerCase()),
-                                                                                        options: library.options[(name.split('.')[1] ?? name)] ?? [],
-                                                                                        value: documentRecord.docvals[name] ?? '',
-                                                                                        class: {
-                                                                                            component: 'col',
-                                                                                        },
-                                                                                    }
-                                                                                );
-                                                                                break;
-                                                                        }
-                                                                        break;
-                                                                }
+                                        // Create the Form
+                                        self._builder.Utility(
+                                            'form',
+                                            component.body,
+                                            {
+                                                class: {
+                                                    component: 'row row-cols-1 row-cols-md-2 g-2',
+                                                },
+                                                callback: {
+                                                    val: function(values){
+                                                        for(const [key, value] of Object.entries(documentRecord.docvals)){
+                                                            if(typeof values[key] === 'undefined'){
+                                                                values[key] = value;
                                                             }
                                                         }
-
-                                                        // Resolve the promise
-                                                        resolve();
+                                                        if(typeof values.contact !== 'undefined' && contacts[values.contact]){
+                                                            values['contact'] = contacts[values.contact].vcard;
+                                                        }
+                                                        return {docvals: values};
                                                     },
-                                                );
+                                                    submit: function(form){
+
+                                                        // Show the modal spinner
+                                                        modal.spinner(true);
+
+                                                        // AJAX Request
+                                                        API.endpoint('/documents/update?id='+documentRecord.id).data(form.val()).execute(function(response){
+                                                            modal.hide();
+                                                        });
+                                                    },
+                                                }
                                             },
-                                        });
-                                    },
+                                            function(form,component){
+
+                                                // Add event listener on the modal submit button
+                                                parent.content.footer.submit.click(function(e){
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    form.submit();
+                                                });
+
+                                                // Loop through the variables
+                                                for(const [key, variable] of Object.entries(documentRecord.doctype.template.variables)){
+
+                                                    const name = variable.replace(/{{/g, '').replace(/}}/g, '');
+                                                    const label = builder.Helper.ucwords(variable.replace(/{{/g, '').replace(/}}/g, '').replace(/\./g, ' '));
+                                                    const type = self._fieldType(name.split('.')[1] ?? name);
+
+                                                    // Check if the variable is in the documentRecord.doctype.locked array
+                                                    if(!documentRecord.doctype.locked.includes(name)){
+
+                                                        // Generate field types
+                                                        switch(name.split('.')[0] ?? name){
+                                                            case 'contact':
+                                                                if(contacts === null){
+                                                                    contacts = {};
+                                                                    form.add(
+                                                                        'select2',
+                                                                        {
+                                                                            name: name.split('.')[0] ?? name,
+                                                                            label: self._builder.Locale.get(name.split('.')[0] ?? name),
+                                                                            placeholder: self._builder.Locale.get('Select '+(name.split('.')[0] ?? name).toLowerCase()),
+                                                                            options: [],
+                                                                            value: documentRecord.docvals[name] ?? '',
+                                                                            class: {
+                                                                                component: 'col',
+                                                                            },
+                                                                        },
+                                                                        function(input){
+
+                                                                            // Retrieve records
+                                                                            API.endpoint('/contacts/fetchAll').data({
+                                                                                conditions: [
+                                                                                    {key: 'targetTable', operator: '=', value: self._properties.targetTable},
+                                                                                    {key: 'targetId', operator: '=', value: self._properties.targetId},
+                                                                                    {key: 'isArchived', operator: '<>', value: 1},
+                                                                                ]
+                                                                            }).execute(function(response){
+
+                                                                                // Add Records
+                                                                                for(const [key, record] of Object.entries(response.records)){
+                                                                                    contacts[key] = record;
+                                                                                    if(record.vcard.role.includes('Signatory')){
+                                                                                        input.add(key, record.vcard.name + (record.vcard.organization ? ' ('+record.vcard.organization+')' : '') + ' <' + (record.vcard.email ? record.vcard.email : self._builder.Locale.get('no email')) + '>' + (record.vcard.title ? ' - '+record.vcard.title : ''));
+                                                                                    }
+                                                                                }
+                                                                            });
+                                                                        }
+                                                                    );
+                                                                }
+                                                                break;
+                                                            default:
+                                                                switch(name.split('.')[1] ?? name){
+                                                                    default:
+                                                                        form.add(
+                                                                            type,
+                                                                            {
+                                                                                name: name,
+                                                                                label: self._builder.Locale.get(label),
+                                                                                placeholder: self._builder.Locale.get('Enter '+(name.split('.')[1] ?? name).toLowerCase()),
+                                                                                options: library.options[(name.split('.')[1] ?? name)] ?? [],
+                                                                                value: documentRecord.docvals[name] ?? '',
+                                                                                class: {
+                                                                                    component: 'col',
+                                                                                },
+                                                                            }
+                                                                        );
+                                                                        break;
+                                                                }
+                                                                break;
+                                                        }
+                                                    }
+                                                }
+
+                                                // Resolve the promise
+                                                resolve();
+                                            },
+                                        );
+                                    },function(xhr, status, error){
+                                        reject(new Error(self._builder.Locale.get('Failed to fetch document')));
+                                    });
+                                },function(xhr, status, error){
+                                    reject(new Error(self._builder.Locale.get('Failed to fetch libraries')));
                                 });
                             } catch (error) {
                                 console.error('Error in document edit modal:', error);
