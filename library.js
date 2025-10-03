@@ -11,6 +11,7 @@ builder.add('widgets','documents', class extends builder.ComponentClass {
             targetId: null,
             interval: 10000,
             autoStart: false,
+            render: true,
             docvals: {},
             callback: {},
         };
@@ -36,6 +37,11 @@ builder.add('widgets','documents', class extends builder.ComponentClass {
 
         // Set Self
         const self = this;
+
+        // Check if we should render
+        if(!this._properties.render){
+            return;
+        }
 
         // Create Component
         this._component = $(document.createElement('div')).attr({
@@ -308,6 +314,11 @@ builder.add('widgets','documents', class extends builder.ComponentClass {
 
         // Set Self
         const self = this;
+
+        // Check if we should render
+        if(!this._properties.render){
+            return;
+        }
 
         let options = {};
         let callback = null;
@@ -656,7 +667,7 @@ builder.add('widgets','documents', class extends builder.ComponentClass {
         return this;
     }
 
-    create(doctype = null){
+    create(doctype = null, callback = null){
 
         // Set Self
         const self = this;
@@ -719,6 +730,11 @@ builder.add('widgets','documents', class extends builder.ComponentClass {
 
                                                         // Add the new document to the explorer
                                                         self.add(response.record);
+
+                                                        // Execute Callback
+                                                        if(typeof callback === 'function'){
+                                                            callback(response.record);
+                                                        }
 
                                                         // Hide the modal
                                                         modal.hide();
