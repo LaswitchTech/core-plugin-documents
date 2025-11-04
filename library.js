@@ -1143,6 +1143,18 @@ builder.add('widgets','documents', class extends builder.ComponentClass {
                                         // Set the record
                                         const documentRecord = response.record;
                                         var contacts = null;
+                                        var target = {
+                                            table: self._properties.targetTable,
+                                            id: self._properties.targetId,
+                                        };
+
+                                        // Check for vcard in target
+                                        if(typeof documentRecord.target !== "undefined" && typeof documentRecord.target.vcard === "object"){
+                                            target = {
+                                                table: 'vcards',
+                                                id: documentRecord.target.vcard.id,
+                                            };
+                                        }
 
                                         // Create the Form
                                         self._builder.Utility(
@@ -1217,8 +1229,8 @@ builder.add('widgets','documents', class extends builder.ComponentClass {
                                                                             // Retrieve records
                                                                             API.endpoint('/contacts/fetchAll').data({
                                                                                 conditions: [
-                                                                                    {key: 'targetTable', operator: '=', value: self._properties.targetTable},
-                                                                                    {key: 'targetId', operator: '=', value: self._properties.targetId},
+                                                                                    {key: 'targetTable', operator: '=', value: target.table},
+                                                                                    {key: 'targetId', operator: '=', value: target.id},
                                                                                     {key: 'isArchived', operator: '<>', value: 1},
                                                                                 ]
                                                                             }).execute(function(response){
